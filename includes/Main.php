@@ -53,7 +53,7 @@ class Main
     // Add "Download QR" link to posts and pages list
     public function rrze_qr_add_download_link($actions, $post)
     {
-        if ($post->post_status === 'publish') {
+        if ($post->post_status === 'publish' && ($post->post_type === 'post' || $post->post_type === 'page')) {
             $actions['download_qr'] = '<a href="#" class="download-qr" data-id="' . $post->ID . '">Download QR</a>';
         }
         return $actions;
