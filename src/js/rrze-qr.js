@@ -1,65 +1,66 @@
-document.addEventListener('DOMContentLoaded', function() {
-    document.querySelectorAll('.generate-qr').forEach(function(element) {
-        element.addEventListener('click', function(event) {
-            event.preventDefault();
-            var postId = event.target.getAttribute('data-id');
-            var postUrl = location.origin + '/?p=' + postId;
+jQuery(document).ready(function($) {
+    $('.download-qr').on('click', function(event) {
+        event.preventDefault();
+        var postId = $(this).data('id');
+        var nonce = rrzeQr.nonce;
 
-            alert(postUrl);
+        alert('hi');
 
-            var qr = new QRious({
-                value: postUrl,
-                size: 300
-            });
+        // AJAX request to get the permalink
+        $.post(rrzeQr.ajaxurl, {
+            action: 'rrze_qr_get_permalink',
+            nonce: nonce,
+            post_id: postId
+        }, function(response) {
+            if (response.success) {
+                var postUrl = response.data;
+                
+                var qr = new QRious({
+                    value: postUrl,
+                    size: 300
+                });
 
-            var link = document.createElement('a');
-            link.href = qr.toDataURL();
-            link.download = 'qr-code.png';
-            link.textContent = 'Download QR Code';
-            event.target.parentNode.appendChild(link);
+                var link = $('<a>')
+                    .attr('href', qr.toDataURL())
+                    .attr('download', 'qr-code.png')
+                    .text('Download QR Code');
+                $(event.target).after(link);
+                link[0].click();
+                link.remove();
+            } else {
+                alert(response.data);
+            }
         });
     });
 
-    var form = document.getElementById('rrze-qr-form');
-    if (form) {
-        form.addEventListener('submit', function(event) {
-            event.preventDefault();
-            var url = document.getElementById('rrze-qr-url').value;
-            var nonce = rrzeQr.nonce;
+    $('#rrze-qr-form').on('submit', function(event) {
+        event.preventDefault();
+        var url = $('#rrze-qr-url').val();
+        var nonce = rrzeQr.nonce;
 
-            fetch(rrzeQr.ajaxurl, {
-                method: 'POST',
-                credentials: 'same-origin',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded'
-                },
-                body: new URLSearchParams({
-                    action: 'rrze_qr_generate',
-                    nonce: nonce,
-                    url: url
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    var qr = new QRious({
-                        value: data.data,
-                        size: 300
-                    });
+        $.post(rrzeQr.ajaxurl, {
+            action: 'rrze_qr_generate',
+            nonce: nonce,
+            url: url
+        }, function(response) {
+            if (response.success) {
+                var qr = new QRious({
+                    value: response.data,
+                    size: 300
+                });
 
-                    var canvas = document.getElementById('rrze-qr-canvas');
-                    canvas.style.display = 'block';
-                    qr.set({
-                        element: canvas
-                    });
+                var canvas = $('#rrze-qr-canvas')[0];
+                $('#rrze-qr-canvas').show();
+                qr.set({
+                    element: canvas
+                });
 
-                    var downloadLink = document.getElementById('rrze-qr-download');
-                    downloadLink.href = qr.toDataURL();
-                    downloadLink.style.display = 'block';
-                } else {
-                    alert(data.data);
-                }
-            });
+                var downloadLink = $('#rrze-qr-download');
+                downloadLink.attr('href', qr.toDataURL());
+                downloadLink.show();
+            } else {
+                alert(response.data);
+            }
         });
-    }
+    });
 });
