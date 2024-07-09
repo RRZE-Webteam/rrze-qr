@@ -5,6 +5,8 @@ document.addEventListener('DOMContentLoaded', function() {
             var postId = event.target.getAttribute('data-id');
             var postUrl = location.origin + '/?p=' + postId;
 
+            alert(postUrl);
+
             var qr = new QRious({
                 value: postUrl,
                 size: 300
