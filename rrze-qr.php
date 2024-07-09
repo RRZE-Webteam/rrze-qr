@@ -4,7 +4,7 @@
 Plugin Name:     RRZE QR
 Plugin URI:      https://gitlab.rrze.fau.de/rrze-webteam/rrze-qr
 Description:     Plugin, um QR Codes zu generieren 
-Version:         0.0.3
+Version:         0.0.4
 Requires at least: 6.4
 Requires PHP:      8.2
 Author:          RRZE Webteam
@@ -22,7 +22,7 @@ Text Domain:     rrze-qr
  // Enqueue QRious library and custom scripts
  function rrze_qr_enqueue_scripts($hook) {
      // Only load scripts on appropriate admin pages
-     if ($hook === 'edit.php' || $hook === 'edit-page.php' || $hook === 'toplevel_page_rrze-qr') {
+     if ($hook === 'edit.php' || $hook === 'edit-page.php' || $hook === 'tools_page_rrze-qr') {
          wp_enqueue_script('qrious', plugin_dir_url(__FILE__) . 'src/js/qrious.min.js', array(), null, true);
          wp_enqueue_script('rrze-qr-js', plugin_dir_url(__FILE__) . 'src/js/rrze-qr.js', array('jquery', 'qrious'), null, true);
      }

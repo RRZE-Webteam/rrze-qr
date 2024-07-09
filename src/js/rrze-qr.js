@@ -4,8 +4,6 @@ jQuery(document).ready(function($) {
         var postId = $(this).data('id');
         var nonce = rrzeQr.nonce;
 
-        alert('hi');
-
         // AJAX request to get the permalink
         $.post(rrzeQr.ajaxurl, {
             action: 'rrze_qr_get_permalink',
@@ -49,15 +47,22 @@ jQuery(document).ready(function($) {
                     size: 300
                 });
 
+                // Zeige den QR-Code im Canvas an
                 var canvas = $('#rrze-qr-canvas')[0];
                 $('#rrze-qr-canvas').show();
                 qr.set({
                     element: canvas
                 });
 
-                var downloadLink = $('#rrze-qr-download');
-                downloadLink.attr('href', qr.toDataURL());
-                downloadLink.show();
+                // Erstelle den Download-Button für den QR-Code
+                var downloadLink = $('<a>')
+                    .attr('href', qr.toDataURL())
+                    .attr('download', 'qr-code.png')
+                    .addClass('button button-primary')
+                    .css('margin-left', '10px') // Beispiel: Füge etwas Abstand zum QR-Code hinzu
+                    .html('<span class="dashicons dashicons-download"></span> Download QR Code');
+                
+                $('#rrze-qr-form').append(downloadLink);
             } else {
                 alert(response.data);
             }
