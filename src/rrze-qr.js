@@ -51,7 +51,7 @@ jQuery(document).ready(function ($) {
             .attr('download', 'qr-code.png')
             .addClass('button button-primary')
             .css('margin-left', '10px') // Beispiel: Füge etwas Abstand zum QR-Code hinzu
-            .html('<span class="dashicons dashicons-download"></span>');
+            .html('<span class="rrze-qr-download-icon dashicons dashicons-download"></span>');
 
         $('#rrze-qr-form').append(downloadLink);
     });
