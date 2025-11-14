@@ -4,7 +4,7 @@
 Plugin Name:     RRZE QR
 Plugin URI:      https://gitlab.rrze.fau.de/rrze-webteam/rrze-qr
 Description:     Plugin, um QR Codes zu generieren 
-Version:         1.0.1
+Version:         1.0.2
 Requires at least: 6.4
 Requires PHP:      8.2
 Author:          RRZE Webteam

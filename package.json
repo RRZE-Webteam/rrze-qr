@@ -1,25 +1,32 @@
 {
-    "description": "Plugin to generate QR codes",
-    "author": "RRZE Webteam",
-    "license": "GPL-2.0-or-later",
-    "scripts": {
-        "build": "webpack --mode production",
-        "start": "webpack serve --mode development",
-        "lint": "eslint src",
-        "format": "prettier --write 'src/**/*.js'"
-    },
-    "devDependencies": {
-        "@babel/core": "^7.16.7",
-        "@babel/preset-env": "^7.16.7",
-        "babel-loader": "^8.2.3",
-        "eslint": "^8.7.0",
-        "prettier": "^2.5.1",
-        "webpack": "^5.68.0",
-        "webpack-cli": "^4.9.2",
-        "webpack-dev-server": "^4.7.4"
-    },
-    "dependencies": {
-        "jquery": "latest",
-        "qrious": "latest"
-    }
+  "name": "rrze-qr",
+  "version": "1.0.2",
+  "description": "Plugin to generate QR codes",
+  "author": "RRZE Webteam",
+  "license": "GPL-2.0-or-later",
+  "main": "assets/js/rrze-qr.min.js",
+  "textdomain": "rrze-qr",
+  "browserslist": [
+    "extends @wordpress/browserslist-config"
+  ],
+  "scripts": {
+    "start": "npm run start:js & npm run start:css",
+    "start:js": "cp src/js/qrious.min.js assets/js/qrious.min.js && wp-scripts start src/js/rrze-qr.js --output-path=assets/js --output-filename=rrze-qr.min.js",
+    "start:css": "sass src/css/rrze-qr.css:assets/css/rrze-qr.min.css --watch",
+    "build": "npm run build:js && npm run build:css && npm run increment-version",
+    "build:js": "wp-scripts build src/js/rrze-qr.js --output-path=assets/js --output-filename=rrze-qr.min.js && cp src/js/qrious.min.js assets/js/qrious.min.js",
+    "build:css": "sass src/css/rrze-qr.css:assets/css/rrze-qr.min.css --style=compressed --no-source-map",
+    "increment-version": "node increment-version.js patch",
+    "format": "wp-scripts format",
+    "lint:js": "wp-scripts lint-js",
+    "lint:js:fix": "wp-scripts lint-js --fix"
+  },
+  "devDependencies": {
+    "@wordpress/scripts": "^30.7.0",
+    "sass": "^1.87.0"
+  },
+  "dependencies": {
+    "jquery": "^3.7.1",
+    "qrious": "^4.0.2"
+  }
 }
