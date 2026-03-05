@@ -89,14 +89,30 @@ class Main
         register_setting('rrze_qr_settings_group', 'rrze_qr_color', [
             'type' => 'string',
             'sanitize_callback' => [$this, 'rrze_qr_sanitize_color'],
-            'default' => 'black',
+            'default' => 'black_on_white',
         ]);
     }
 
     // Sanitize color option
     public function rrze_qr_sanitize_color($value)
     {
-        return in_array($value, ['black', '#036'], true) ? $value : 'black';
+        return $this->rrze_qr_normalize_color_scheme($value);
+    }
+
+    // Normalize saved scheme and map legacy values
+    private function rrze_qr_normalize_color_scheme($value)
+    {
+        $legacyMap = [
+            'black' => 'black_on_white',
+            '#036' => 'fau_on_white',
+        ];
+
+        if (isset($legacyMap[$value])) {
+            return $legacyMap[$value];
+        }
+
+        $allowed = ['black_on_white', 'white_on_black', 'fau_on_white', 'white_on_fau'];
+        return in_array($value, $allowed, true) ? $value : 'black_on_white';
     }
 
     // Tools page content
@@ -119,7 +135,7 @@ class Main
     // Admin settings page content
     public function rrze_qr_settings_page()
     {
-        $color = get_option('rrze_qr_color', 'black');
+        $color = $this->rrze_qr_normalize_color_scheme(get_option('rrze_qr_color', 'black_on_white'));
         ?>
         <div class="wrap">
             <h1>RRZE QR</h1>
@@ -128,19 +144,26 @@ class Main
                 <?php settings_fields('rrze_qr_settings_group'); ?>
                 <table class="form-table" role="presentation">
                     <tr>
-                        <th scope="row">
-                            <label>Color</label>
-                        </th>
                         <td>
                             <fieldset>
                                 <label>
-                                    <input type="radio" name="rrze_qr_color" value="black" <?php checked($color, 'black'); ?>>
-                                    black
+                                    <input type="radio" name="rrze_qr_color" value="black_on_white" <?php checked($color, 'black_on_white'); ?>>
+                                    Schwarz auf Weiß
                                 </label>
                                 <br>
                                 <label>
-                                    <input type="radio" name="rrze_qr_color" value="#036" <?php checked($color, '#036'); ?>>
-                                    FAU
+                                    <input type="radio" name="rrze_qr_color" value="white_on_black" <?php checked($color, 'white_on_black'); ?>>
+                                    Weiß auf Schwarz
+                                </label>
+                                <br>
+                                <label>
+                                    <input type="radio" name="rrze_qr_color" value="fau_on_white" <?php checked($color, 'fau_on_white'); ?>>
+                                    FAU-Blau auf Weiß
+                                </label>
+                                <br>
+                                <label>
+                                    <input type="radio" name="rrze_qr_color" value="white_on_fau" <?php checked($color, 'white_on_fau'); ?>>
+                                    Weiß auf FAU-Blau
                                 </label>
                             </fieldset>
                         </td>
@@ -170,10 +193,18 @@ class Main
     // Localize script for AJAX
     public function rrze_qr_localize_script()
     {
+        $colorScheme = $this->rrze_qr_normalize_color_scheme(get_option('rrze_qr_color', 'black_on_white'));
+        $colorMap = [
+            'black_on_white' => ['foreground' => 'black', 'background' => 'white'],
+            'white_on_black' => ['foreground' => 'white', 'background' => 'black'],
+            'fau_on_white' => ['foreground' => '#036', 'background' => 'white'],
+            'white_on_fau' => ['foreground' => 'white', 'background' => '#036'],
+        ];
+
         wp_localize_script('rrze-qr-js', 'rrzeQr', array(
             'ajaxurl' => admin_url('admin-ajax.php'),
             'nonce' => wp_create_nonce('rrze-qr-nonce'),
-            'color' => get_option('rrze_qr_color', 'black')
+            'colors' => $colorMap[$colorScheme]
         )
         );
     }
