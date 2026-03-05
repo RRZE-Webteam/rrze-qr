@@ -15,7 +15,8 @@ jQuery(document).ready(function ($) {
 
                 var qr = new QRious({
                     value: postUrl,
-                    size: 300
+                    size: 300,
+                    foreground: rrzeQr.color || 'black'
                 });
 
                 var link = $('<a>')
@@ -39,7 +40,8 @@ jQuery(document).ready(function ($) {
         var qr = new QRious({
             value: url,
             size: 300,
-            element: canvas
+            element: canvas,
+            foreground: rrzeQr.color || 'black'
         });
 
         // Zeige den QR-Code im Canvas an

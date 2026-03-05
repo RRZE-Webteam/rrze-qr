@@ -32,6 +32,7 @@ class Main
         add_filter('post_row_actions', [$this, 'rrze_qr_add_download_link'], 10, 2);
         add_filter('page_row_actions', [$this, 'rrze_qr_add_download_link'], 10, 2);
         add_action('admin_menu', [$this, 'rrze_qr_admin_menu']);
+        add_action('admin_init', [$this, 'rrze_qr_register_settings']);
         add_action('wp_ajax_rrze_qr_get_permalink', [$this, 'rrze_qr_get_permalink']);
         add_action('admin_enqueue_scripts', [$this, 'rrze_qr_localize_script']);
     }
@@ -68,12 +69,38 @@ class Main
             'QR Code generieren',   // Menu title
             'manage_options',       // Capability
             'rrze-qr',              // Menu slug
+            [$this, 'rrze_qr_tools_page'] // Callback function
+        );
+
+        add_submenu_page(
+            'options-general.php',  // Parent slug
+            'RRZE QR',              // Page title
+            'RRZE QR',              // Menu title
+            'manage_options',       // Capability
+            'rrze-qr-settings',     // Menu slug
             [$this, 'rrze_qr_settings_page'] // Callback function
         );
     }
 
-    // Admin settings page content
-    public function rrze_qr_settings_page()
+
+    // Register plugin settings
+    public function rrze_qr_register_settings()
+    {
+        register_setting('rrze_qr_settings_group', 'rrze_qr_color', [
+            'type' => 'string',
+            'sanitize_callback' => [$this, 'rrze_qr_sanitize_color'],
+            'default' => 'black',
+        ]);
+    }
+
+    // Sanitize color option
+    public function rrze_qr_sanitize_color($value)
+    {
+        return in_array($value, ['black', '#036'], true) ? $value : 'black';
+    }
+
+    // Tools page content
+    public function rrze_qr_tools_page()
     {
         ?>
         <div class="wrap">
@@ -85,6 +112,42 @@ class Main
             </form>
             <canvas id="rrze-qr-canvas" style="display:none;"></canvas>
             <a id="rrze-qr-download" style="display:none;" download="qr-code.png">Download QR Code</a>
+        </div>
+        <?php
+    }
+
+    // Admin settings page content
+    public function rrze_qr_settings_page()
+    {
+        $color = get_option('rrze_qr_color', 'black');
+        ?>
+        <div class="wrap">
+            <h1>RRZE QR</h1>
+
+            <form method="post" action="options.php">
+                <?php settings_fields('rrze_qr_settings_group'); ?>
+                <table class="form-table" role="presentation">
+                    <tr>
+                        <th scope="row">
+                            <label>Color</label>
+                        </th>
+                        <td>
+                            <fieldset>
+                                <label>
+                                    <input type="radio" name="rrze_qr_color" value="black" <?php checked($color, 'black'); ?>>
+                                    black
+                                </label>
+                                <br>
+                                <label>
+                                    <input type="radio" name="rrze_qr_color" value="#036" <?php checked($color, '#036'); ?>>
+                                    FAU
+                                </label>
+                            </fieldset>
+                        </td>
+                    </tr>
+                </table>
+                <?php submit_button(); ?>
+            </form>
         </div>
         <?php
     }
@@ -109,7 +172,8 @@ class Main
     {
         wp_localize_script('rrze-qr-js', 'rrzeQr', array(
             'ajaxurl' => admin_url('admin-ajax.php'),
-            'nonce' => wp_create_nonce('rrze-qr-nonce')
+            'nonce' => wp_create_nonce('rrze-qr-nonce'),
+            'color' => get_option('rrze_qr_color', 'black')
         )
         );
     }
