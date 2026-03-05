@@ -43,6 +43,9 @@ built-in tool.
     QR codes are generated directly in the browser via JavaScript --- no
     server-side processing required.
 
+-   **Adjustable color schemes:**\
+    Users can choose between different color options for the QR code: black on white, white on black, FAU blue on white, and white on FAU blue.
+
 -   **Lightweight & fast:**\
     Minimal footprint and no external API calls.
 
