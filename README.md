@@ -44,7 +44,7 @@ built-in tool.
     server-side processing required.
 
 -   **Adjustable color schemes:**\
-    Users can choose between different color options for the QR code: black on white, white on black, FAU blue on white, and white on FAU blue.
+    Users can choose between different color options for the QR code.
 
 -   **Lightweight & fast:**\
     Minimal footprint and no external API calls.
