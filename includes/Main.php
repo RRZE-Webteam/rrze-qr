@@ -32,8 +32,11 @@ class Main
         add_filter('post_row_actions', [$this, 'rrze_qr_add_download_link'], 10, 2);
         add_filter('page_row_actions', [$this, 'rrze_qr_add_download_link'], 10, 2);
         add_action('admin_menu', [$this, 'rrze_qr_admin_menu']);
+        add_action('admin_init', [$this, 'rrze_qr_migrate_legacy_color_option'], 5);
         add_action('admin_init', [$this, 'rrze_qr_register_settings']);
         add_action('wp_ajax_rrze_qr_get_permalink', [$this, 'rrze_qr_get_permalink']);
+        add_action('wp_ajax_rrze_qr_get_colors', [$this, 'rrze_qr_ajax_get_colors']);
+        add_action('wp_ajax_rrze_qr_resolve_colors', [$this, 'rrze_qr_ajax_resolve_colors']);
         add_action('admin_enqueue_scripts', [$this, 'rrze_qr_localize_script']);
     }
 
@@ -44,7 +47,7 @@ class Main
     public function rrze_qr_enqueue_scripts($hook)
     {
         // Only load scripts on appropriate admin pages
-        if ($hook === 'edit.php' || $hook === 'edit-page.php' || $hook === 'tools_page_rrze-qr') {
+        if ($hook === 'edit.php' || $hook === 'edit-page.php' || $hook === 'tools_page_rrze-qr' || $hook === 'settings_page_rrze-qr-settings') {
             wp_enqueue_script('qrious', plugins_url('assets/js/qrious.min.js', plugin_basename($this->pluginFile)), array('jquery'), null, true);
             wp_enqueue_script('rrze-qr-js', plugins_url('assets/js/rrze-qr.min.js', plugin_basename($this->pluginFile)), array('jquery', 'qrious'), null, true);
             wp_enqueue_style('rrze-qr-css', plugins_url('assets/css/rrze-qr.min.css', plugin_basename($this->pluginFile)));
@@ -86,33 +89,144 @@ class Main
     // Register plugin settings
     public function rrze_qr_register_settings()
     {
-        register_setting('rrze_qr_settings_group', 'rrze_qr_color', [
+        register_setting('rrze_qr_settings_group', 'rrze_qr_foreground', [
             'type' => 'string',
-            'sanitize_callback' => [$this, 'rrze_qr_sanitize_color'],
-            'default' => 'black_on_white',
+            'sanitize_callback' => [$this, 'rrze_qr_sanitize_foreground'],
+            'default' => 'black',
+        ]);
+        register_setting('rrze_qr_settings_group', 'rrze_qr_background', [
+            'type' => 'string',
+            'sanitize_callback' => [$this, 'rrze_qr_sanitize_background'],
+            'default' => 'white',
         ]);
     }
 
-    // Sanitize color option
-    public function rrze_qr_sanitize_color($value)
+    /**
+     * @return string[]
+     */
+    private function rrze_qr_foreground_allowed()
     {
-        return $this->rrze_qr_normalize_color_scheme($value);
+        return ['white', 'black', 'fau'];
     }
 
-    // Normalize saved scheme and map legacy values
-    private function rrze_qr_normalize_color_scheme($value)
+    /**
+     * @return string[]
+     */
+    private function rrze_qr_background_allowed()
     {
-        $legacyMap = [
-            'black' => 'black_on_white',
-            '#036' => 'fau_on_white',
-        ];
+        return ['white', 'black', 'fau', 'transparent'];
+    }
 
-        if (isset($legacyMap[$value])) {
-            return $legacyMap[$value];
+    /**
+     * @param mixed $value Raw option value from the form/API.
+     */
+    public function rrze_qr_sanitize_foreground($value)
+    {
+        $value = is_string($value) ? strtolower(trim($value)) : '';
+        return in_array($value, $this->rrze_qr_foreground_allowed(), true) ? $value : 'black';
+    }
+
+    /**
+     * @param mixed $value Raw option value from the form/API.
+     */
+    public function rrze_qr_sanitize_background($value)
+    {
+        $value = is_string($value) ? strtolower(trim($value)) : '';
+        return in_array($value, $this->rrze_qr_background_allowed(), true) ? $value : 'white';
+    }
+
+    /**
+     * Einmalige Migration alter Preset-Option rrze_qr_color → rrze_qr_foreground / rrze_qr_background.
+     */
+    public function rrze_qr_migrate_legacy_color_option()
+    {
+        if (get_option('rrze_qr_color_legacy_migrated')) {
+            return;
         }
 
-        $allowed = ['black_on_white', 'white_on_black', 'fau_on_white', 'white_on_fau'];
-        return in_array($value, $allowed, true) ? $value : 'black_on_white';
+        $old = get_option('rrze_qr_color');
+        if ($old === false || $old === '') {
+            update_option('rrze_qr_color_legacy_migrated', '1');
+            return;
+        }
+
+        $legacySingle = ['black' => 'black_on_white', '#036' => 'fau_on_white'];
+        if (isset($legacySingle[$old])) {
+            $old = $legacySingle[$old];
+        }
+
+        $schemeMap = [
+            'black_on_white' => ['black', 'white'],
+            'white_on_black' => ['white', 'black'],
+            'fau_on_white' => ['fau', 'white'],
+            'white_on_fau' => ['white', 'fau'],
+            'black_on_transparent' => ['black', 'transparent'],
+            'white_on_transparent' => ['white', 'transparent'],
+            'fau_on_transparent' => ['fau', 'transparent'],
+            'white_on_fau_transparent' => ['white', 'transparent'],
+        ];
+
+        $pair = isset($schemeMap[$old]) ? $schemeMap[$old] : $schemeMap['black_on_white'];
+        update_option('rrze_qr_foreground', $pair[0]);
+        update_option('rrze_qr_background', $pair[1]);
+        delete_option('rrze_qr_color');
+        update_option('rrze_qr_color_legacy_migrated', '1');
+    }
+
+    /**
+     * Liest gespeicherte Modus-Farben (mit Fallback nach Migration).
+     *
+     * @return array{foreground: string, background: string}
+     */
+    private function rrze_qr_get_fg_bg_tokens()
+    {
+        $fg = get_option('rrze_qr_foreground', 'black');
+        $bg = get_option('rrze_qr_background', 'white');
+        return [
+            'foreground' => $this->rrze_qr_sanitize_foreground($fg),
+            'background' => $this->rrze_qr_sanitize_background($bg),
+        ];
+    }
+
+    /**
+     * Farbwerte für QRious aus Vorder-/Hintergrund-Tokens (bereits sanitisiert).
+     *
+     * @param array{foreground: string, background: string} $tokens
+     * @return array{foreground: string, background: string, backgroundAlpha: int}
+     */
+    private function rrze_qr_colors_for_qrious_from_tokens(array $tokens)
+    {
+        $css = [
+            'white' => 'white',
+            'black' => 'black',
+            'fau' => '#036',
+        ];
+
+        $foreground = $css[$tokens['foreground']];
+
+        if ($tokens['background'] === 'transparent') {
+            return [
+                'foreground' => $foreground,
+                'background' => 'white',
+                'backgroundAlpha' => 0,
+            ];
+        }
+
+        return [
+            'foreground' => $foreground,
+            'background' => $css[$tokens['background']],
+            'backgroundAlpha' => 1,
+        ];
+    }
+
+    /**
+     * Farbwerte für QRious (gespeicherte Einstellung).
+     *
+     * @return array{foreground: string, background: string, backgroundAlpha: int}
+     */
+    private function rrze_qr_colors_for_qrious()
+    {
+        return $this->rrze_qr_colors_for_qrious_from_tokens($this->rrze_qr_get_fg_bg_tokens());
     }
 
     // Tools page content
@@ -126,8 +240,8 @@ class Main
                 <input type="url" id="rrze-qr-url" name="rrze-qr-url" required>
                 <button type="submit" class="button button-primary">Generate QR Code</button>
             </form>
-            <canvas id="rrze-qr-canvas" style="display:none;"></canvas>
-            <a id="rrze-qr-download" style="display:none;" download="qr-code.png">Download QR Code</a>
+            <canvas id="rrze-qr-canvas" class="rrze-qr-canvas rrze-qr--hidden" width="300" height="300"></canvas>
+            <a id="rrze-qr-download" class="rrze-qr-download-link rrze-qr--hidden" download="qr-code.png" href="#">Download QR Code</a>
         </div>
         <?php
     }
@@ -135,35 +249,59 @@ class Main
     // Admin settings page content
     public function rrze_qr_settings_page()
     {
-        $color = $this->rrze_qr_normalize_color_scheme(get_option('rrze_qr_color', 'black_on_white'));
+        $tokens = $this->rrze_qr_get_fg_bg_tokens();
+        $foreground = $tokens['foreground'];
+        $background = $tokens['background'];
         ?>
         <div class="wrap">
             <h1>RRZE QR</h1>
 
             <form method="post" action="options.php">
                 <?php settings_fields('rrze_qr_settings_group'); ?>
-                <table class="form-table" role="presentation">
+                <table class="form-table rrze-qr-settings" role="presentation">
                     <tr>
-                        <td>
-                            <fieldset>
-                                <label>
-                                    <input type="radio" name="rrze_qr_color" value="black_on_white" <?php checked($color, 'black_on_white'); ?>>
-                                    Schwarz auf Weiß
+                        <td class="rrze-qr-settings__col rrze-qr-settings__col--first">
+                            <p class="rrze-qr-settings__heading"><strong>Vordergrund</strong></p>
+                            <fieldset class="rrze-qr-settings__fieldset">
+                                <legend class="screen-reader-text">Vordergrund</legend>
+                                <label class="rrze-qr-settings__label">
+                                    <input type="radio" name="rrze_qr_foreground" value="white" <?php checked($foreground, 'white'); ?>>
+                                    Weiß
                                 </label>
                                 <br>
-                                <label>
-                                    <input type="radio" name="rrze_qr_color" value="white_on_black" <?php checked($color, 'white_on_black'); ?>>
-                                    Weiß auf Schwarz
+                                <label class="rrze-qr-settings__label">
+                                    <input type="radio" name="rrze_qr_foreground" value="black" <?php checked($foreground, 'black'); ?>>
+                                    Schwarz
                                 </label>
                                 <br>
-                                <label>
-                                    <input type="radio" name="rrze_qr_color" value="fau_on_white" <?php checked($color, 'fau_on_white'); ?>>
-                                    FAU-Blau auf Weiß
+                                <label class="rrze-qr-settings__label">
+                                    <input type="radio" name="rrze_qr_foreground" value="fau" <?php checked($foreground, 'fau'); ?>>
+                                    FAU-Blau
+                                </label>
+                            </fieldset>
+                        </td>
+                        <td class="rrze-qr-settings__col">
+                            <p class="rrze-qr-settings__heading"><strong>Hintergrund</strong></p>
+                            <fieldset class="rrze-qr-settings__fieldset">
+                                <legend class="screen-reader-text">Hintergrund</legend>
+                                <label class="rrze-qr-settings__label">
+                                    <input type="radio" name="rrze_qr_background" value="white" <?php checked($background, 'white'); ?>>
+                                    Weiß
                                 </label>
                                 <br>
-                                <label>
-                                    <input type="radio" name="rrze_qr_color" value="white_on_fau" <?php checked($color, 'white_on_fau'); ?>>
-                                    Weiß auf FAU-Blau
+                                <label class="rrze-qr-settings__label">
+                                    <input type="radio" name="rrze_qr_background" value="black" <?php checked($background, 'black'); ?>>
+                                    Schwarz
+                                </label>
+                                <br>
+                                <label class="rrze-qr-settings__label">
+                                    <input type="radio" name="rrze_qr_background" value="fau" <?php checked($background, 'fau'); ?>>
+                                    FAU-Blau
+                                </label>
+                                <br>
+                                <label class="rrze-qr-settings__label">
+                                    <input type="radio" name="rrze_qr_background" value="transparent" <?php checked($background, 'transparent'); ?>>
+                                    Transparent
                                 </label>
                             </fieldset>
                         </td>
@@ -190,22 +328,48 @@ class Main
         }
     }
 
+    /**
+     * Aktuelle gespeicherte Farben (für QR-Erzeugung ohne Admin-Seite neu laden).
+     */
+    public function rrze_qr_ajax_get_colors()
+    {
+        check_ajax_referer('rrze-qr-nonce', 'nonce');
+        if (! current_user_can('edit_posts')) {
+            wp_send_json_error('', 403);
+        }
+        wp_send_json_success($this->rrze_qr_colors_for_qrious());
+    }
+
+    /**
+     * Farben aus Vorder-/Hintergrundwahl (für Live-Vorschau in den Einstellungen).
+     */
+    public function rrze_qr_ajax_resolve_colors()
+    {
+        check_ajax_referer('rrze-qr-nonce', 'nonce');
+        if (! current_user_can('manage_options')) {
+            wp_send_json_error('', 403);
+        }
+        $fg = isset($_POST['foreground']) ? wp_unslash($_POST['foreground']) : '';
+        $bg = isset($_POST['background']) ? wp_unslash($_POST['background']) : '';
+        $tokens = [
+            'foreground' => $this->rrze_qr_sanitize_foreground($fg),
+            'background' => $this->rrze_qr_sanitize_background($bg),
+        ];
+        wp_send_json_success($this->rrze_qr_colors_for_qrious_from_tokens($tokens));
+    }
+
     // Localize script for AJAX
     public function rrze_qr_localize_script()
     {
-        $colorScheme = $this->rrze_qr_normalize_color_scheme(get_option('rrze_qr_color', 'black_on_white'));
-        $colorMap = [
-            'black_on_white' => ['foreground' => 'black', 'background' => 'white'],
-            'white_on_black' => ['foreground' => 'white', 'background' => 'black'],
-            'fau_on_white' => ['foreground' => '#036', 'background' => 'white'],
-            'white_on_fau' => ['foreground' => 'white', 'background' => '#036'],
-        ];
-
-        wp_localize_script('rrze-qr-js', 'rrzeQr', array(
-            'ajaxurl' => admin_url('admin-ajax.php'),
-            'nonce' => wp_create_nonce('rrze-qr-nonce'),
-            'colors' => $colorMap[$colorScheme]
-        )
+        wp_localize_script(
+            'rrze-qr-js',
+            'rrzeQr',
+            [
+                'ajaxurl' => admin_url('admin-ajax.php'),
+                'nonce' => wp_create_nonce('rrze-qr-nonce'),
+                'colors' => $this->rrze_qr_colors_for_qrious(),
+                'previewSampleUrl' => home_url('/'),
+            ]
         );
     }
 }
