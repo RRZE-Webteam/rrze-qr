@@ -11,23 +11,28 @@
   ],
   "scripts": {
     "start": "npm run start:js & npm run start:css",
-    "start:js": "cp src/js/qrious.min.js assets/js/qrious.min.js && wp-scripts start src/js/rrze-qr.js --output-path=assets/js --output-filename=rrze-qr.min.js",
+    "start:js": "cp node_modules/qrious/dist/qrious.min.js assets/js/qrious.min.js && wp-scripts start src/js/rrze-qr.js --output-path=assets/js --output-filename=rrze-qr.min.js",
     "start:css": "sass src/css/rrze-qr.css:assets/css/rrze-qr.min.css --watch",
-    "build": "npm run build:js && npm run build:css && npm run increment-version",
-    "build:js": "wp-scripts build src/js/rrze-qr.js --output-path=assets/js --output-filename=rrze-qr.min.js && cp src/js/qrious.min.js assets/js/qrious.min.js",
+    "build": "npm run build:js && npm run build:css",
+    "build:js": "wp-scripts build src/js/rrze-qr.js --output-path=assets/js --output-filename=rrze-qr.min.js && cp node_modules/qrious/dist/qrious.min.js assets/js/qrious.min.js",
     "build:css": "sass src/css/rrze-qr.css:assets/css/rrze-qr.min.css --style=compressed --no-source-map",
     "increment-version": "node increment-version.js patch",
     "format": "wp-scripts format",
     "lint:js": "wp-scripts lint-js",
-    "lint:js:fix": "wp-scripts lint-js --fix"
+    "lint:js:fix": "wp-scripts lint-js --fix",
+    "test": "node --test tests/*.test.js && php tests/php.php",
+    "lint:php": "php -l rrze-qr.php && php -l includes/Main.php && php -l tests/php.php",
+    "release:patch": "node increment-version.js patch",
+    "release:minor": "node increment-version.js minor"
   },
   "devDependencies": {
-    "@wordpress/scripts": "^30.7.0",
-    "sass": "^1.87.0",
-    "jsqr": "^1.4.0"
+    "@wordpress/scripts": "^35.0.0",
+    "jsdom": "^26.1.0",
+    "jsqr": "^1.4.0",
+    "sass": "^1.104.1",
+    "jquery": "^4.0.0"
   },
   "dependencies": {
-    "jquery": "^3.7.1",
     "qrious": "^4.0.2"
   }
 }

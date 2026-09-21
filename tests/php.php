@@ -1,4 +1,8 @@
 <?php
+if (PHP_SAPI !== 'cli') {
+    http_response_code(404);
+    exit;
+}
 // Isolated endpoint regression checks; no WordPress database is modified.
 define('ABSPATH', __DIR__ . '/');
 class WP_Post
