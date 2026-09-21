@@ -57,8 +57,8 @@ class Main
     // Add "Download QR" link to posts and pages list
     public function rrze_qr_add_download_link($actions, $post)
     {
-        if ($post->post_status === 'publish' && ($post->post_type === 'post' || $post->post_type === 'page')) {
-            $actions['download_qr'] = '<a href="#" class="download-qr" data-id="' . $post->ID . '">Download QR</a>';
+        if ($this->rrze_qr_can_download($post)) {
+            $actions['download_qr'] = '<a href="#" class="download-qr" data-id="' . esc_attr($post->ID) . '">Download QR</a>';
         }
         return $actions;
     }
@@ -318,14 +318,30 @@ class Main
     {
         check_ajax_referer('rrze-qr-nonce', 'nonce');
 
-        $post_id = intval($_POST['post_id']);
+        $raw_id = isset($_POST['post_id']) ? wp_unslash($_POST['post_id']) : null;
+        $post_id = is_string($raw_id) ? filter_var($raw_id, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]) : false;
+        if ($post_id === false) {
+            wp_send_json_error(__('Invalid post ID.', 'rrze-qr'), 400);
+        }
+        $post = get_post($post_id);
+        if (!$this->rrze_qr_can_download($post)) {
+            wp_send_json_error(__('You cannot generate a QR code for this post.', 'rrze-qr'), 403);
+        }
         $permalink = get_permalink($post_id);
 
         if ($permalink) {
             wp_send_json_success($permalink);
         } else {
-            wp_send_json_error('Could not retrieve permalink.');
+            wp_send_json_error(__('Could not retrieve permalink.', 'rrze-qr'), 404);
         }
+    }
+
+    private function rrze_qr_can_download($post)
+    {
+        return $post instanceof \WP_Post
+            && $post->post_status === 'publish'
+            && in_array($post->post_type, ['post', 'page'], true)
+            && current_user_can('edit_post', $post->ID);
     }
 
     /**
@@ -334,7 +350,7 @@ class Main
     public function rrze_qr_ajax_get_colors()
     {
         check_ajax_referer('rrze-qr-nonce', 'nonce');
-        if (! current_user_can('edit_posts')) {
+        if (!current_user_can('edit_posts') && !current_user_can('edit_pages') && !current_user_can('manage_options')) {
             wp_send_json_error('', 403);
         }
         wp_send_json_success($this->rrze_qr_colors_for_qrious());
