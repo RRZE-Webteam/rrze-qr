@@ -1,106 +1,87 @@
 # RRZE QR
 
-[![Version](https://img.shields.io/github/package-json/v/rrze-webteam/rrze-qr/main?label=Version)](https://github.com/RRZE-Webteam/rrze-qr)
-[![Release
-Version](https://img.shields.io/github/v/release/rrze-webteam/rrze-qr?label=Release+Version)](https://github.com/RRZE-Webteam/rrze-qr/releases/)
-[![GitHub
-License](https://img.shields.io/github/license/rrze-webteam/rrze-qr)](https://github.com/RRZE-Webteam/rrze-qr)
-[![GitHub
-issues](https://img.shields.io/github/issues/rrze-webteam/rrze-qr)](https://github.com/RRZE-Webteam/rrze-qr/issues)
+Generate and download QR codes in the WordPress administration area. QR images
+are created locally in the browser with QRious; no external QR service receives
+the URL.
 
-------------------------------------------------------------------------
+## Requirements
 
-## Overview
+- WordPress 6.4 or newer
+- PHP 8.2 or newer
+- JavaScript enabled in the administration area
 
-**RRZE QR** provides a simple way to generate **QR codes** for:
+## Usage
 
--   Posts\
--   Pages\
--   Arbitrary URLs
+### Published posts and pages
 
-The plugin integrates directly into the WordPress backend and allows
-users to quickly create and download QR codes pointing to the permalink
-of any published page or post --- or to any custom URL entered via a
-built-in tool.
+Use **Download QR** in the posts or pages list to download a PNG containing the
+item's permalink. The action is available for published posts and pages that the
+current user can edit. The server enforces the same restrictions.
 
-------------------------------------------------------------------------
+### Custom URLs
 
-## Features
+Administrators can open **Tools → Generate QR Code**, enter an HTTP or HTTPS URL,
+and generate a preview with a download link. Generating another code updates the
+same download link. Editing the URL hides the previous result.
 
--   **Generate QR codes for posts and pages:**\
-    Adds a "Generate QR" link to the list view ("All Posts", "All
-    Pages") for every *published* item.
+Validation checks the URL format and QR capacity. It does **not** visit the URL,
+check its HTTP status, or guarantee that its destination is reachable.
+International domain names and paths are normalized to an ASCII URL before
+encoding. URLs longer than 2,953 encoded characters are rejected.
 
--   **Download as PNG:**\
-    Clicking "Generate QR" returns a ready-to-download PNG file
-    containing the QR code for the permalink.
+### Colors and preview
 
--   **Tool section with URL input:**\
-    Under **Tools → Generate QR**, users can enter any URL, validate it,
-    and instantly generate a QR code.
+Under **Settings → RRZE QR**, administrators can choose white, black, or FAU blue
+for the foreground, and white, black, FAU blue, or transparency for the background.
+The live preview uses the site's home URL. Its background selector helps evaluate
+transparent output without changing the downloaded image.
 
--   **Client-side rendering:**\
-    QR codes are generated directly in the browser via JavaScript --- no
-    server-side processing required.
+Solid colors must contrast: one must be white and the other black or FAU blue.
+Invalid saved combinations fall back to black on white with a settings message.
+Transparent codes require a contrasting surface. Test inverted or transparent
+codes with the intended scanners and background before publishing or printing.
 
--   **Adjustable color schemes:**\
-    Users can choose between different color options for the QR code.
+### Export behavior
 
--   **Lightweight & fast:**\
-    Minimal footprint and no external API calls.
+- PNG downloads use error correction level L.
+- Every image reserves a four-module quiet zone on all sides.
+- Image dimensions adapt to the QR version, with at least two pixels per module.
+  Typical exports are approximately 300 pixels wide; dense codes can be larger.
+- Network or generation failures appear alongside the relevant control.
 
-------------------------------------------------------------------------
+## Development
 
-## How It Works
+```sh
+npm ci
+npm run build
+npm test
+npm run lint:js
+npm run lint:php
+```
 
-### 1. QR codes for posts & pages
+The lockfile pins dependencies. Builds generate the committed files in `assets/`
+and do not change the plugin version. Use `npm run release:patch` or
+`npm run release:minor` explicitly when preparing a release, then review the
+version changes.
 
-In the WordPress backend, the plugin adds a **"Generate QR"** action
-link next to each published post or page.
+Tests cover QR decoding and capacity boundaries, quiet zones, repeated generation,
+request failures and response ordering, endpoint permissions, settings colors,
+preview markup, asset versions, and translated feedback. PHP checks use isolated
+WordPress stubs and do not alter the database. Browser, scanner, and real WordPress
+role testing remain useful release checks.
 
-When clicked:
+## Libraries and translations
 
-1.  The permalink of the item is determined.\
-2.  A QR code is generated using the **QRious** library.\
-3.  The browser displays a PNG download dialog.
+WordPress supplies jQuery through the script's `jquery` enqueue dependency. The
+npm jQuery package is used only by development tests. QRious is copied from the
+locked npm dependency into `assets/js/qrious.min.js` during the build.
 
-### 2. QR generator tool
-
-In the admin area under:
-
-    Tools → Generate QR
-
-you'll find:
-
--   A URL input field\
--   Live URL validation\
--   Instant QR code rendering\
--   A download button for the PNG file
-
-If the URL is valid (HTTP status is not 4xxx), the QR code is displayed.
-
-------------------------------------------------------------------------
-
-## Libraries
-
--   **QRious** -- QR code rendering (minified version bundled)\
--   **jQuery** -- Used by the backend UI
-
-Both libraries are included directly in the plugin.
-
-------------------------------------------------------------------------
+Interface strings use the `rrze-qr` text domain. A translation template and German
+translations are included in `languages/`.
 
 ## License
 
-Licensed under the\
-[GNU General Public License v2.0 or
-later](https://www.gnu.org/licenses/gpl-2.0.html).
+Licensed under the [GNU General Public License v2.0 or later](https://www.gnu.org/licenses/gpl-2.0.html).
 
-------------------------------------------------------------------------
-
-## Credits
-
-Developed and maintained by the\
-**RRZE Webteam, Friedrich-Alexander-Universität Erlangen-Nürnberg
-(FAU)**\
-👉 https://github.com/RRZE-Webteam/rrze-qr
+Developed by the [RRZE Webteam](https://github.com/RRZE-Webteam),
+Friedrich-Alexander-Universität Erlangen-Nürnberg (FAU).
