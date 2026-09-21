@@ -271,7 +271,7 @@ class Main
                 <button type="submit" class="button button-primary">Generate QR Code</button>
             </form>
             <canvas id="rrze-qr-canvas" class="rrze-qr-canvas rrze-qr--hidden" width="300" height="300"></canvas>
-            <a id="rrze-qr-download" class="rrze-qr-download-link rrze-qr--hidden" download="qr-code.png" href="#">Download QR Code</a>
+            <a id="rrze-qr-download" class="button button-primary rrze-qr-download-link rrze-qr--hidden" download="qr-code.png" href="#">Download QR Code</a>
         </div>
         <?php
     }

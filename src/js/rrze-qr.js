@@ -82,6 +82,7 @@ jQuery(document).ready(function ($) {
         event.preventDefault();
         var url = $('#rrze-qr-url').val();
         var canvas = $('#rrze-qr-canvas')[0];
+        $('#rrze-qr-download, #rrze-qr-canvas').addClass('rrze-qr--hidden');
 
         rrzeQrWithFreshColors(function (colors) {
             var qr = rrzeQrCreate(
@@ -98,13 +99,9 @@ jQuery(document).ready(function ($) {
             if (!qr) { return; }
             $('#rrze-qr-canvas').removeClass('rrze-qr--hidden');
 
-            var downloadLink = $('<a>')
+            $('#rrze-qr-download')
                 .attr('href', qr.toDataURL())
-                .attr('download', 'qr-code.png')
-                .addClass('button button-primary rrze-qr-tools-download-btn')
-                .html('<span class="rrze-qr-download-icon dashicons dashicons-download"></span>');
-
-            $('#rrze-qr-form').append(downloadLink);
+                .removeClass('rrze-qr--hidden');
         });
     });
 
