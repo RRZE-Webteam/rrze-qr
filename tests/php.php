@@ -10,6 +10,8 @@ class JsonResponse extends RuntimeException
     public function __construct(public bool $success, public mixed $data, public int $status) { parent::__construct(); }
 }
 function __($text, $domain) { return $text; }
+function get_option($name, $default = false) { return $GLOBALS['options'][$name] ?? $default; }
+function add_settings_error($setting, $code, $message) { $GLOBALS['settings_errors'][] = $message; }
 function wp_unslash($value) { return $value; }
 function esc_attr($value) { return htmlspecialchars((string) $value, ENT_QUOTES); }
 function check_ajax_referer($action, $field) {
@@ -55,3 +57,14 @@ $GLOBALS['allowed'] = true;
 $GLOBALS['valid_nonce'] = false;
 check(request($main, '42')->status === 403, 'Invalid nonce must be rejected');
 echo "PHP endpoint checks passed.\n";
+
+foreach (['white', 'black', 'fau'] as $fg) {
+    foreach (['white', 'black', 'fau', 'transparent'] as $bg) {
+        $_POST = ['rrze_qr_foreground' => $fg, 'rrze_qr_background' => $bg];
+        $valid = $bg === 'transparent' || ($fg !== $bg && ($fg === 'white' || $bg === 'white'));
+        $actual = [$main->rrze_qr_save_foreground($fg), $main->rrze_qr_save_background($bg)];
+        check($actual === ($valid ? [$fg, $bg] : ['black', 'white']), "Unexpected saved colors: $fg/$bg");
+    }
+}
+check(!empty($GLOBALS['settings_errors']), 'Unsafe colors must show a settings error');
+echo "PHP color checks passed.\n";

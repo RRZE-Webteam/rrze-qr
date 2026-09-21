@@ -91,12 +91,12 @@ class Main
     {
         register_setting('rrze_qr_settings_group', 'rrze_qr_foreground', [
             'type' => 'string',
-            'sanitize_callback' => [$this, 'rrze_qr_sanitize_foreground'],
+            'sanitize_callback' => [$this, 'rrze_qr_save_foreground'],
             'default' => 'black',
         ]);
         register_setting('rrze_qr_settings_group', 'rrze_qr_background', [
             'type' => 'string',
-            'sanitize_callback' => [$this, 'rrze_qr_sanitize_background'],
+            'sanitize_callback' => [$this, 'rrze_qr_save_background'],
             'default' => 'white',
         ]);
     }
@@ -133,6 +133,35 @@ class Main
     {
         $value = is_string($value) ? strtolower(trim($value)) : '';
         return in_array($value, $this->rrze_qr_background_allowed(), true) ? $value : 'white';
+    }
+
+    private function rrze_qr_valid_color_pair(array $tokens)
+    {
+        return $tokens['background'] === 'transparent'
+            || ($tokens['foreground'] !== $tokens['background']
+                && in_array('white', $tokens, true));
+    }
+
+    public function rrze_qr_save_foreground($value)
+    {
+        $tokens = [
+            'foreground' => $this->rrze_qr_sanitize_foreground($value),
+            'background' => $this->rrze_qr_sanitize_background(wp_unslash($_POST['rrze_qr_background'] ?? get_option('rrze_qr_background', 'white'))),
+        ];
+        if (!$this->rrze_qr_valid_color_pair($tokens)) {
+            add_settings_error('rrze_qr_settings_group', 'rrze_qr_contrast', __('Choose contrasting colors. Black on white has been used instead.', 'rrze-qr'));
+            return 'black';
+        }
+        return $tokens['foreground'];
+    }
+
+    public function rrze_qr_save_background($value)
+    {
+        $tokens = [
+            'foreground' => $this->rrze_qr_sanitize_foreground(wp_unslash($_POST['rrze_qr_foreground'] ?? get_option('rrze_qr_foreground', 'black'))),
+            'background' => $this->rrze_qr_sanitize_background($value),
+        ];
+        return $this->rrze_qr_valid_color_pair($tokens) ? $tokens['background'] : 'white';
     }
 
     /**
@@ -182,10 +211,11 @@ class Main
     {
         $fg = get_option('rrze_qr_foreground', 'black');
         $bg = get_option('rrze_qr_background', 'white');
-        return [
+        $tokens = [
             'foreground' => $this->rrze_qr_sanitize_foreground($fg),
             'background' => $this->rrze_qr_sanitize_background($bg),
         ];
+        return $this->rrze_qr_valid_color_pair($tokens) ? $tokens : ['foreground' => 'black', 'background' => 'white'];
     }
 
     /**
@@ -255,6 +285,7 @@ class Main
         ?>
         <div class="wrap">
             <h1>RRZE QR</h1>
+            <?php settings_errors('rrze_qr_settings_group'); ?>
 
             <form method="post" action="options.php">
                 <?php settings_fields('rrze_qr_settings_group'); ?>
@@ -371,6 +402,9 @@ class Main
             'foreground' => $this->rrze_qr_sanitize_foreground($fg),
             'background' => $this->rrze_qr_sanitize_background($bg),
         ];
+        if (!$this->rrze_qr_valid_color_pair($tokens)) {
+            wp_send_json_error(__('Choose contrasting foreground and background colors.', 'rrze-qr'), 400);
+        }
         wp_send_json_success($this->rrze_qr_colors_for_qrious_from_tokens($tokens));
     }
 
