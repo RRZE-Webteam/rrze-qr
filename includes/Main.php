@@ -37,7 +37,6 @@ class Main
         add_action('wp_ajax_rrze_qr_get_permalink', [$this, 'rrze_qr_get_permalink']);
         add_action('wp_ajax_rrze_qr_get_colors', [$this, 'rrze_qr_ajax_get_colors']);
         add_action('wp_ajax_rrze_qr_resolve_colors', [$this, 'rrze_qr_ajax_resolve_colors']);
-        add_action('admin_enqueue_scripts', [$this, 'rrze_qr_localize_script']);
     }
 
 
@@ -47,10 +46,13 @@ class Main
     public function rrze_qr_enqueue_scripts($hook)
     {
         // Only load scripts on appropriate admin pages
-        if ($hook === 'edit.php' || $hook === 'edit-page.php' || $hook === 'tools_page_rrze-qr' || $hook === 'settings_page_rrze-qr-settings') {
-            wp_enqueue_script('qrious', plugins_url('assets/js/qrious.min.js', plugin_basename($this->pluginFile)), array('jquery'), null, true);
-            wp_enqueue_script('rrze-qr-js', plugins_url('assets/js/rrze-qr.min.js', plugin_basename($this->pluginFile)), array('jquery', 'qrious'), null, true);
-            wp_enqueue_style('rrze-qr-css', plugins_url('assets/css/rrze-qr.min.css', plugin_basename($this->pluginFile)));
+        if (in_array($hook, ['edit.php', 'tools_page_rrze-qr', 'settings_page_rrze-qr-settings'], true)) {
+            $base = dirname($this->pluginFile);
+            $asset = require $base . '/assets/js/rrze-qr.min.asset.php';
+            wp_enqueue_script('rrze-qr-qrious', plugins_url('assets/js/qrious.min.js', $this->pluginFile), [], hash_file('sha256', $base . '/assets/js/qrious.min.js'), true);
+            wp_enqueue_script('rrze-qr-js', plugins_url('assets/js/rrze-qr.min.js', $this->pluginFile), array_merge(['jquery', 'rrze-qr-qrious'], $asset['dependencies']), $asset['version'], true);
+            wp_enqueue_style('rrze-qr-css', plugins_url('assets/css/rrze-qr.min.css', $this->pluginFile), [], hash_file('sha256', $base . '/assets/css/rrze-qr.min.css'));
+            $this->rrze_qr_localize_script();
         }
     }
 

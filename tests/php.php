@@ -18,6 +18,13 @@ function settings_errors($group) {}
 function settings_fields($group) {}
 function submit_button() {}
 function checked($actual, $expected) {}
+function plugins_url($path, $file) { return 'https://example.test/plugins/rrze-qr/' . $path; }
+function wp_enqueue_script($handle, $url, $dependencies, $version, $footer) { $GLOBALS['assets'][$handle] = compact('dependencies', 'version'); }
+function wp_enqueue_style($handle, $url, $dependencies, $version) { $GLOBALS['assets'][$handle] = compact('dependencies', 'version'); }
+function wp_localize_script($handle, $name, $data) { $GLOBALS['localized'] = $data; }
+function admin_url($path) { return 'https://example.test/wp-admin/' . $path; }
+function wp_create_nonce($action) { return 'test'; }
+function home_url($path) { return 'https://example.test' . $path; }
 function check_ajax_referer($action, $field) {
     if (!$GLOBALS['valid_nonce']) { throw new JsonResponse(false, 'Invalid nonce', 403); }
 }
@@ -78,3 +85,11 @@ $settings_html = ob_get_clean();
 check(str_contains($settings_html, 'id="rrze-qr-settings-preview"'), 'Settings must render the preview canvas');
 check(str_contains($settings_html, 'id="rrze-qr-preview-surface"'), 'Transparent previews need a background selector');
 echo "PHP preview checks passed.\n";
+$main->rrze_qr_enqueue_scripts('index.php');
+check(empty($GLOBALS['assets']) && empty($GLOBALS['localized']), 'Unrelated admin screens must not load QR assets or configuration');
+$main->rrze_qr_enqueue_scripts('edit.php');
+$asset = require __DIR__ . '/../assets/js/rrze-qr.min.asset.php';
+check($GLOBALS['assets']['rrze-qr-js']['version'] === $asset['version'], 'JavaScript must use its build hash');
+check($GLOBALS['assets']['rrze-qr-css']['version'] === hash_file('sha256', __DIR__ . '/../assets/css/rrze-qr.min.css'), 'CSS must use its content hash');
+check(in_array('rrze-qr-qrious', $GLOBALS['assets']['rrze-qr-js']['dependencies'], true), 'Use a plugin-specific QRious handle');
+echo "PHP asset checks passed.\n";
