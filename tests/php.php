@@ -14,6 +14,9 @@ class JsonResponse extends RuntimeException
     public function __construct(public bool $success, public mixed $data, public int $status) { parent::__construct(); }
 }
 function __($text, $domain) { return $text; }
+function esc_html__($text, $domain) { return htmlspecialchars($text, ENT_QUOTES); }
+function esc_html_e($text, $domain) { echo esc_html__($text, $domain); }
+function esc_attr_e($text, $domain) { echo esc_attr($text); }
 function get_option($name, $default = false) { return $GLOBALS['options'][$name] ?? $default; }
 function add_settings_error($setting, $code, $message) { $GLOBALS['settings_errors'][] = $message; }
 function wp_unslash($value) { return $value; }

@@ -19,7 +19,16 @@ async function setup(file, extra = '') {
         requests.push({ data, deferred, timeout });
         return deferred.promise();
     };
-    window.rrzeQr = { ajaxurl: '/ajax', nonce: 'test', previewSampleUrl: 'https://example.test/' };
+    window.rrzeQr = {
+        ajaxurl: '/ajax', nonce: 'test', previewSampleUrl: 'https://example.test/',
+        strings: {
+            invalidUrl: 'Enter a valid HTTP or HTTPS URL.', tooLong: 'This URL is too long.',
+            requestFailed: 'The request failed. Reload the page and try again.',
+            generationFailed: 'The QR code could not be generated.',
+            generating: 'Generating QR code…', downloadStarted: 'QR code download started.',
+            ready: 'QR code is ready.', updatingPreview: 'Updating preview…', previewUpdated: 'Preview updated.'
+        }
+    };
     const renders = [];
     window.QRious = function (options) {
         renders.push(options);
@@ -113,6 +122,25 @@ for (const file of ['src/js/rrze-qr.js', 'assets/js/rrze-qr.min.js']) {
             await flush();
             assert.equal($('#rrze-qr-settings-preview').hasClass('rrze-qr--hidden'), true);
             assert.match($('#rrze-qr-preview-status').text(), /contrasting/);
+        } finally { dom.window.close(); }
+    });
+
+    test(`${file}: translated feedback and renderer failures are visible`, async () => {
+        const { dom, $, requests } = await setup(file);
+        try {
+            dom.window.rrzeQr.strings.ready = 'Der QR-Code ist fertig.';
+            $('#rrze-qr-url').val('https://example.test/');
+            $('#rrze-qr-form').trigger('submit');
+            requests[0].deferred.resolve({ success: true, data: { foreground: 'black', background: 'white' } });
+            await flush();
+            assert.equal($('#rrze-qr-status').text(), 'Der QR-Code ist fertig.');
+            delete dom.window.QRious;
+            $('#rrze-qr-form').trigger('submit');
+            requests[1].deferred.resolve({ success: true, data: { foreground: 'black', background: 'white' } });
+            await flush();
+            assert.equal($('#rrze-qr-status').text(), 'The QR code could not be generated.');
+            assert.equal($('#rrze-qr-form button').prop('disabled'), false);
+            assert.equal($('#rrze-qr-download').hasClass('rrze-qr--hidden'), true);
         } finally { dom.window.close(); }
     });
 }

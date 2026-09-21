@@ -60,7 +60,7 @@ class Main
     public function rrze_qr_add_download_link($actions, $post)
     {
         if ($this->rrze_qr_can_download($post)) {
-            $actions['download_qr'] = '<a href="#" class="download-qr" data-id="' . esc_attr($post->ID) . '">Download QR</a>';
+            $actions['download_qr'] = '<a href="#" class="download-qr" data-id="' . esc_attr($post->ID) . '">' . esc_html__('Download QR', 'rrze-qr') . '</a>';
         }
         return $actions;
     }
@@ -70,8 +70,8 @@ class Main
     {
         add_submenu_page(
             'tools.php',            // Parent slug
-            'QR Code generieren',   // Page title
-            'QR Code generieren',   // Menu title
+            __('Generate QR Code', 'rrze-qr'),   // Page title
+            __('Generate QR Code', 'rrze-qr'),   // Menu title
             'manage_options',       // Capability
             'rrze-qr',              // Menu slug
             [$this, 'rrze_qr_tools_page'] // Callback function
@@ -266,15 +266,15 @@ class Main
     {
         ?>
         <div class="wrap">
-            <h1>QR Code Generator</h1>
+            <h1><?php esc_html_e('QR Code Generator', 'rrze-qr'); ?></h1>
             <form id="rrze-qr-form">
-                <label for="rrze-qr-url">URL:</label>
+                <label for="rrze-qr-url"><?php esc_html_e('URL:', 'rrze-qr'); ?></label>
                 <input type="url" id="rrze-qr-url" name="rrze-qr-url" required>
-                <button type="submit" class="button button-primary">Generate QR Code</button>
+                <button type="submit" class="button button-primary"><?php esc_html_e('Generate QR Code', 'rrze-qr'); ?></button>
             </form>
             <p id="rrze-qr-status" role="status" aria-live="polite"></p>
-            <canvas id="rrze-qr-canvas" class="rrze-qr-canvas rrze-qr--hidden" width="300" height="300"></canvas>
-            <a id="rrze-qr-download" class="button button-primary rrze-qr-download-link rrze-qr--hidden" download="qr-code.png" href="#">Download QR Code</a>
+            <canvas role="img" aria-label="<?php esc_attr_e('Generated QR code', 'rrze-qr'); ?>" id="rrze-qr-canvas" class="rrze-qr-canvas rrze-qr--hidden" width="300" height="300"></canvas>
+            <a id="rrze-qr-download" class="button button-primary rrze-qr-download-link rrze-qr--hidden" download="qr-code.png" href="#"><?php esc_html_e('Download QR Code', 'rrze-qr'); ?></a>
         </div>
         <?php
     }
@@ -295,62 +295,62 @@ class Main
                 <table class="form-table rrze-qr-settings" role="presentation">
                     <tr>
                         <td class="rrze-qr-settings__col rrze-qr-settings__col--first">
-                            <p class="rrze-qr-settings__heading"><strong>Vordergrund</strong></p>
+                            <p class="rrze-qr-settings__heading"><strong><?php esc_html_e('Foreground', 'rrze-qr'); ?></strong></p>
                             <fieldset class="rrze-qr-settings__fieldset">
-                                <legend class="screen-reader-text">Vordergrund</legend>
+                                <legend class="screen-reader-text"><?php esc_html_e('Foreground', 'rrze-qr'); ?></legend>
                                 <label class="rrze-qr-settings__label">
                                     <input type="radio" name="rrze_qr_foreground" value="white" <?php checked($foreground, 'white'); ?>>
-                                    Weiß
+                                    <?php esc_html_e('White', 'rrze-qr'); ?>
                                 </label>
                                 <br>
                                 <label class="rrze-qr-settings__label">
                                     <input type="radio" name="rrze_qr_foreground" value="black" <?php checked($foreground, 'black'); ?>>
-                                    Schwarz
+                                    <?php esc_html_e('Black', 'rrze-qr'); ?>
                                 </label>
                                 <br>
                                 <label class="rrze-qr-settings__label">
                                     <input type="radio" name="rrze_qr_foreground" value="fau" <?php checked($foreground, 'fau'); ?>>
-                                    FAU-Blau
+                                    <?php esc_html_e('FAU Blue', 'rrze-qr'); ?>
                                 </label>
                             </fieldset>
                         </td>
                         <td class="rrze-qr-settings__col">
-                            <p class="rrze-qr-settings__heading"><strong>Hintergrund</strong></p>
+                            <p class="rrze-qr-settings__heading"><strong><?php esc_html_e('Background', 'rrze-qr'); ?></strong></p>
                             <fieldset class="rrze-qr-settings__fieldset">
-                                <legend class="screen-reader-text">Hintergrund</legend>
+                                <legend class="screen-reader-text"><?php esc_html_e('Background', 'rrze-qr'); ?></legend>
                                 <label class="rrze-qr-settings__label">
                                     <input type="radio" name="rrze_qr_background" value="white" <?php checked($background, 'white'); ?>>
-                                    Weiß
+                                    <?php esc_html_e('White', 'rrze-qr'); ?>
                                 </label>
                                 <br>
                                 <label class="rrze-qr-settings__label">
                                     <input type="radio" name="rrze_qr_background" value="black" <?php checked($background, 'black'); ?>>
-                                    Schwarz
+                                    <?php esc_html_e('Black', 'rrze-qr'); ?>
                                 </label>
                                 <br>
                                 <label class="rrze-qr-settings__label">
                                     <input type="radio" name="rrze_qr_background" value="fau" <?php checked($background, 'fau'); ?>>
-                                    FAU-Blau
+                                    <?php esc_html_e('FAU Blue', 'rrze-qr'); ?>
                                 </label>
                                 <br>
                                 <label class="rrze-qr-settings__label">
                                     <input type="radio" name="rrze_qr_background" value="transparent" <?php checked($background, 'transparent'); ?>>
-                                    Transparent
+                                    <?php esc_html_e('Transparent', 'rrze-qr'); ?>
                                 </label>
                             </fieldset>
                         </td>
                     </tr>
                 </table>
                 <div class="rrze-qr-settings__preview-wrap">
-                    <h2>QR Code Preview</h2>
-                    <p id="rrze-qr-preview-help">Transparent codes need a contrasting surface. Test the downloaded code on its intended background before publishing.</p>
-                    <label for="rrze-qr-preview-surface">Preview background:</label>
+                    <h2><?php esc_html_e('QR Code Preview', 'rrze-qr'); ?></h2>
+                    <p id="rrze-qr-preview-help"><?php esc_html_e('Transparent codes need a contrasting surface. Test the downloaded code on its intended background before publishing.', 'rrze-qr'); ?></p>
+                    <label for="rrze-qr-preview-surface"><?php esc_html_e('Preview background:', 'rrze-qr'); ?></label>
                     <select id="rrze-qr-preview-surface">
-                        <option value="checkerboard">Checkerboard</option>
-                        <option value="white">White</option>
-                        <option value="black">Black</option>
+                        <option value="checkerboard"><?php esc_html_e('Checkerboard', 'rrze-qr'); ?></option>
+                        <option value="white"><?php esc_html_e('White', 'rrze-qr'); ?></option>
+                        <option value="black"><?php esc_html_e('Black', 'rrze-qr'); ?></option>
                     </select>
-                    <canvas id="rrze-qr-settings-preview" class="rrze-qr-settings__preview-canvas" width="180" height="180" role="img" aria-label="QR code preview for this site" aria-describedby="rrze-qr-preview-help"></canvas>
+                    <canvas id="rrze-qr-settings-preview" class="rrze-qr-settings__preview-canvas" width="180" height="180" role="img" aria-label="<?php esc_attr_e('QR code preview for this site', 'rrze-qr'); ?>" aria-describedby="rrze-qr-preview-help"></canvas>
                     <p id="rrze-qr-preview-status" role="status" aria-live="polite"></p>
                 </div>
                 <?php submit_button(); ?>
@@ -434,6 +434,17 @@ class Main
                 'nonce' => wp_create_nonce('rrze-qr-nonce'),
                 'colors' => $this->rrze_qr_colors_for_qrious(),
                 'previewSampleUrl' => home_url('/'),
+                'strings' => [
+                    'invalidUrl' => __('Enter a valid HTTP or HTTPS URL.', 'rrze-qr'),
+                    'tooLong' => __('This URL is too long for a QR code. Use a shorter URL (maximum 2,953 encoded characters).', 'rrze-qr'),
+                    'requestFailed' => __('The request failed. Reload the page and try again.', 'rrze-qr'),
+                    'generationFailed' => __('The QR code could not be generated. Reload the page and try again.', 'rrze-qr'),
+                    'generating' => __('Generating QR code…', 'rrze-qr'),
+                    'downloadStarted' => __('QR code download started.', 'rrze-qr'),
+                    'ready' => __('QR code is ready.', 'rrze-qr'),
+                    'updatingPreview' => __('Updating preview…', 'rrze-qr'),
+                    'previewUpdated' => __('Preview updated.', 'rrze-qr'),
+                ],
             ]
         );
     }

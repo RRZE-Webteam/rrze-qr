@@ -50,6 +50,7 @@ Text Domain:     rrze-qr
  register_deactivation_hook(__FILE__, __NAMESPACE__ . '\deactivation');
  // Wird aufgerufen, sobald alle aktivierten Plugins geladen wurden.
  add_action('plugins_loaded', __NAMESPACE__ . '\loaded');
+ add_action('init', __NAMESPACE__ . '\load_textdomain');
  
  /**
   * Einbindung der Sprachdateien.
@@ -67,10 +68,10 @@ Text Domain:     rrze-qr
      $error = '';
      if (version_compare(PHP_VERSION, RRZE_PHP_VERSION, '<')) {
          /* Übersetzer: 1: aktuelle PHP-Version, 2: erforderliche PHP-Version */
-         $error = sprintf(__('The server is running PHP version %1$s. The Plugin requires at least PHP version %2$s.', 'rrze-shorturl'), PHP_VERSION, RRZE_PHP_VERSION);
+         $error = sprintf(__('The server is running PHP version %1$s. The Plugin requires at least PHP version %2$s.', 'rrze-qr'), PHP_VERSION, RRZE_PHP_VERSION);
      } elseif (version_compare($GLOBALS['wp_version'], RRZE_WP_VERSION, '<')) {
          /* Übersetzer: 1: aktuelle WP-Version, 2: erforderliche WP-Version */
-         $error = sprintf(__('The server is running WordPress version %1$s. The Plugin requires at least WordPress version %2$s.', 'rrze-shorturl'), $GLOBALS['wp_version'], RRZE_WP_VERSION);
+         $error = sprintf(__('The server is running WordPress version %1$s. The Plugin requires at least WordPress version %2$s.', 'rrze-qr'), $GLOBALS['wp_version'], RRZE_WP_VERSION);
      }
      return $error;
  }
@@ -111,9 +112,6 @@ Text Domain:     rrze-qr
  */
 function loaded()
 {
-    // Sprachdateien werden eingebunden.
-    load_textdomain();
-
     // Überprüft die minimal erforderliche PHP- u. WP-Version.
     if ($error = system_requirements()) {
         include_once ABSPATH . 'wp-admin/includes/plugin.php';

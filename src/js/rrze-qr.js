@@ -1,6 +1,21 @@
 const { createQr, normalizeUrl } = require('./qr-code');
 
 jQuery(document).ready(function ($) {
+    function text(key) {
+        return rrzeQr.strings[key];
+    }
+    function errorText(error) {
+        return (error.code && text(error.code)) || error.message;
+    }
+    function render(options) {
+        try {
+            return createQr(QRious, options);
+        } catch (error) {
+            if (!error.code) { error.code = 'generationFailed'; }
+            throw error;
+        }
+    }
+
     function colorOptions(colors) {
         return {
             foreground: colors.foreground,
@@ -18,12 +33,12 @@ jQuery(document).ready(function ($) {
                 timeout: 15000
             });
             if (!response || !response.success || !response.data) {
-                throw new Error(typeof response?.data === 'string' ? response.data : 'The request failed. Reload the page and try again.');
+                throw new Error(typeof response?.data === 'string' ? response.data : text('requestFailed'));
             }
             return response.data;
         } catch (error) {
             if (error instanceof Error) { throw error; }
-            throw new Error(typeof error.responseJSON?.data === 'string' ? error.responseJSON.data : 'The request failed. Reload the page and try again.');
+            throw new Error(typeof error.responseJSON?.data === 'string' ? error.responseJSON.data : text('requestFailed'));
         }
     }
 
@@ -41,17 +56,17 @@ jQuery(document).ready(function ($) {
             $link.after($status);
         }
         $link.attr({ 'aria-disabled': 'true', 'aria-busy': 'true' });
-        status($status, 'Generating QR code…');
+        status($status, text('generating'));
         try {
             const data = await request({ action: 'rrze_qr_get_permalink', post_id: $link.data('id') });
-            const qr = createQr(QRious, Object.assign({ value: data.url, size: 300 }, colorOptions(data.colors)));
+            const qr = render(Object.assign({ value: data.url, size: 300 }, colorOptions(data.colors)));
             const download = $('<a>').attr({ href: qr.toDataURL(), download: 'qr-code-' + $link.data('id') + '.png' });
             $link.after(download);
             download[0].click();
             download.remove();
-            status($status, 'QR code download started.');
+            status($status, text('downloadStarted'));
         } catch (error) {
-            status($status, error.message);
+            status($status, errorText(error));
         } finally {
             $link.removeAttr('aria-disabled aria-busy');
         }
@@ -78,17 +93,17 @@ jQuery(document).ready(function ($) {
         hideResult();
         $submit.prop('disabled', true);
         $form.attr('aria-busy', 'true');
-        status($status, 'Generating QR code…');
+        status($status, text('generating'));
         try {
             const url = normalizeUrl($('#rrze-qr-url').val());
             const colors = await request({ action: 'rrze_qr_get_colors' });
             if (current !== generation) { return; }
-            const qr = createQr(QRious, Object.assign({ value: url, size: 300, element: $('#rrze-qr-canvas')[0] }, colorOptions(colors)));
+            const qr = render(Object.assign({ value: url, size: 300, element: $('#rrze-qr-canvas')[0] }, colorOptions(colors)));
             $('#rrze-qr-canvas').removeClass('rrze-qr--hidden');
             $('#rrze-qr-download').attr('href', qr.toDataURL()).removeClass('rrze-qr--hidden');
-            status($status, 'QR code is ready.');
+            status($status, text('ready'));
         } catch (error) {
-            if (current === generation) { status($status, error.message); }
+            if (current === generation) { status($status, errorText(error)); }
         } finally {
             if (current === generation) {
                 $submit.prop('disabled', false);
@@ -106,7 +121,7 @@ jQuery(document).ready(function ($) {
         const current = ++previewGeneration;
         const $previewStatus = $('#rrze-qr-preview-status');
         $preview.addClass('rrze-qr--hidden');
-        status($previewStatus, 'Updating preview…');
+        status($previewStatus, text('updatingPreview'));
         try {
             const colors = await request({
                 action: 'rrze_qr_resolve_colors',
@@ -114,11 +129,11 @@ jQuery(document).ready(function ($) {
                 background: $('input[name="rrze_qr_background"]:checked').val()
             });
             if (current !== previewGeneration) { return; }
-            createQr(QRious, Object.assign({ element: $preview[0], value: rrzeQr.previewSampleUrl, size: 180 }, colorOptions(colors)));
+            render(Object.assign({ element: $preview[0], value: rrzeQr.previewSampleUrl, size: 180 }, colorOptions(colors)));
             $preview.removeClass('rrze-qr--hidden');
-            status($previewStatus, 'Preview updated.');
+            status($previewStatus, text('previewUpdated'));
         } catch (error) {
-            if (current === previewGeneration) { status($previewStatus, error.message); }
+            if (current === previewGeneration) { status($previewStatus, errorText(error)); }
         }
     }
     if ($preview.length) {
