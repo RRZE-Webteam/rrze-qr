@@ -56,3 +56,21 @@ test('rejects malformed and unsupported URLs', () => {
         assert.throws(() => normalizeUrl(value), /valid HTTP/);
     }
 });
+
+test('exports four-module quiet zones and decodable images at version transitions', () => {
+    for (const length of [17, 18, 32, 33, 230, 231, 271, 272, 2809, 2810, 2953]) {
+        const prefix = 'https://a.co/';
+        const value = prefix + 'a'.repeat(length - prefix.length);
+        const qr = createQr(QRious, { value, size: 300 });
+        const { width, height, pixels } = qr.canvas;
+        assert.ok(qr.padding >= 8, 'At least two pixels per module');
+        for (let y = 0; y < height; y++) {
+            for (let x = 0; x < width; x++) {
+                if (x < qr.padding || y < qr.padding || x >= width - qr.padding || y >= height - qr.padding) {
+                    assert.equal(pixels[(y * width + x) * 4], 255, 'The quiet zone must be blank');
+                }
+            }
+        }
+        assert.equal(decode(pixels, width, height)?.data, value);
+    }
+});
