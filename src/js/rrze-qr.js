@@ -106,6 +106,9 @@ jQuery(document).ready(function ($) {
     });
 
     var $settingsPreview = $('#rrze-qr-settings-preview');
+    $('#rrze-qr-preview-surface').on('change', function () {
+        $settingsPreview.css('background', this.value === 'checkerboard' ? '' : this.value);
+    });
     if ($settingsPreview.length && typeof QRious !== 'undefined') {
         var sampleUrl =
             rrzeQr.previewSampleUrl || window.location.href.split('#')[0];

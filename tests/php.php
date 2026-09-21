@@ -14,6 +14,10 @@ function get_option($name, $default = false) { return $GLOBALS['options'][$name]
 function add_settings_error($setting, $code, $message) { $GLOBALS['settings_errors'][] = $message; }
 function wp_unslash($value) { return $value; }
 function esc_attr($value) { return htmlspecialchars((string) $value, ENT_QUOTES); }
+function settings_errors($group) {}
+function settings_fields($group) {}
+function submit_button() {}
+function checked($actual, $expected) {}
 function check_ajax_referer($action, $field) {
     if (!$GLOBALS['valid_nonce']) { throw new JsonResponse(false, 'Invalid nonce', 403); }
 }
@@ -68,3 +72,9 @@ foreach (['white', 'black', 'fau'] as $fg) {
 }
 check(!empty($GLOBALS['settings_errors']), 'Unsafe colors must show a settings error');
 echo "PHP color checks passed.\n";
+ob_start();
+$main->rrze_qr_settings_page();
+$settings_html = ob_get_clean();
+check(str_contains($settings_html, 'id="rrze-qr-settings-preview"'), 'Settings must render the preview canvas');
+check(str_contains($settings_html, 'id="rrze-qr-preview-surface"'), 'Transparent previews need a background selector');
+echo "PHP preview checks passed.\n";

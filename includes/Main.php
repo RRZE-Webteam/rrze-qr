@@ -338,6 +338,17 @@ class Main
                         </td>
                     </tr>
                 </table>
+                <div class="rrze-qr-settings__preview-wrap">
+                    <h2>QR Code Preview</h2>
+                    <p id="rrze-qr-preview-help">Transparent codes need a contrasting surface. Test the downloaded code on its intended background before publishing.</p>
+                    <label for="rrze-qr-preview-surface">Preview background:</label>
+                    <select id="rrze-qr-preview-surface">
+                        <option value="checkerboard">Checkerboard</option>
+                        <option value="white">White</option>
+                        <option value="black">Black</option>
+                    </select>
+                    <canvas id="rrze-qr-settings-preview" class="rrze-qr-settings__preview-canvas" width="180" height="180" role="img" aria-label="QR code preview for this site" aria-describedby="rrze-qr-preview-help"></canvas>
+                </div>
                 <?php submit_button(); ?>
             </form>
         </div>

@@ -52,6 +52,9 @@ table.form-table.rrze-qr-settings tbody tr td {
 
 .rrze-qr-settings__preview-canvas {
     display: block;
+    width: 180px;
+    height: auto;
+    margin-top: 1em;
     border: 1px solid #c3c4c7;
     border-radius: 2px;
     background:
