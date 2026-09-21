@@ -3,7 +3,7 @@
   "version": "1.1.0",
   "description": "Plugin to generate QR codes",
   "author": "RRZE Webteam",
-  "license": "GPL-2.0-or-later",
+  "license": "GPL-3.0-or-later",
   "main": "assets/js/rrze-qr.min.js",
   "textdomain": "rrze-qr",
   "browserslist": [

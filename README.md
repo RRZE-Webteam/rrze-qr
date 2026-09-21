@@ -81,7 +81,9 @@ translations are included in `languages/`.
 
 ## License
 
-Licensed under the [GNU General Public License v2.0 or later](https://www.gnu.org/licenses/gpl-2.0.html).
+Licensed under the [GNU General Public License v3.0 or later](https://www.gnu.org/licenses/gpl-3.0.html).
+
+See [LICENSE](LICENSE) for the license text and [third-party notices](THIRD-PARTY-NOTICES.md) for QRious attribution.
 
 Developed by the [RRZE Webteam](https://github.com/RRZE-Webteam),
 Friedrich-Alexander-Universität Erlangen-Nürnberg (FAU).

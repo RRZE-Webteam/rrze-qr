@@ -1,5 +1,5 @@
 # Copyright (C) 2026 RRZE Webteam
-# This file is distributed under the GNU General Public License v2.
+# This file is distributed under the GPL-3.0-or-later license.
 msgid ""
 msgstr ""
 "Project-Id-Version: RRZE QR 1.1.0\n"

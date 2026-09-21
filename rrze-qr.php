@@ -9,8 +9,8 @@ Requires at least: 6.4
 Requires PHP:      8.2
 Author:          RRZE Webteam
 Author URI:      https://blogs.fau.de/webworking/
-License:         GNU General Public License v2
-License URI:     http://www.gnu.org/licenses/gpl-2.0.html
+License:         GPL-3.0-or-later
+License URI:     https://www.gnu.org/licenses/gpl-3.0.html
 Domain Path:     /languages
 Text Domain:     rrze-qr
  */
