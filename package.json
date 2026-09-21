@@ -11,10 +11,10 @@
   ],
   "scripts": {
     "start": "npm run start:js & npm run start:css",
-    "start:js": "cp node_modules/qrious/dist/qrious.min.js assets/js/qrious.min.js && wp-scripts start src/js/rrze-qr.js --output-path=assets/js --output-filename=rrze-qr.min.js",
+    "start:js": "cp node_modules/qrious/dist/qrious.min.js assets/js/qrious.min.js && wp-scripts start",
     "start:css": "sass src/css/rrze-qr.css:assets/css/rrze-qr.min.css --watch",
     "build": "npm run build:js && npm run build:css",
-    "build:js": "wp-scripts build src/js/rrze-qr.js --output-path=assets/js --output-filename=rrze-qr.min.js && cp node_modules/qrious/dist/qrious.min.js assets/js/qrious.min.js",
+    "build:js": "wp-scripts build && cp node_modules/qrious/dist/qrious.min.js assets/js/qrious.min.js",
     "build:css": "sass src/css/rrze-qr.css:assets/css/rrze-qr.min.css --style=compressed --no-source-map",
     "increment-version": "node increment-version.js patch",
     "format": "wp-scripts format",
@@ -26,11 +26,14 @@
     "release:minor": "node increment-version.js minor"
   },
   "devDependencies": {
+    "@wordpress/components": "^25.8.14",
+    "@wordpress/element": "^5.19.13",
+    "@wordpress/i18n": "^4.42.13",
     "@wordpress/scripts": "^35.0.0",
+    "jquery": "^4.0.0",
     "jsdom": "^26.1.0",
     "jsqr": "^1.4.0",
-    "sass": "^1.104.1",
-    "jquery": "^4.0.0"
+    "sass": "^1.104.1"
   },
   "dependencies": {
     "qrious": "^4.0.2"

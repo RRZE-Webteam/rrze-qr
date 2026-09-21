@@ -67,10 +67,10 @@ Text Domain:     rrze-qr
  {
      $error = '';
      if (version_compare(PHP_VERSION, RRZE_PHP_VERSION, '<')) {
-         /* Übersetzer: 1: aktuelle PHP-Version, 2: erforderliche PHP-Version */
+         /* translators: 1: current PHP version, 2: required PHP version. */
          $error = sprintf(__('The server is running PHP version %1$s. The Plugin requires at least PHP version %2$s.', 'rrze-qr'), PHP_VERSION, RRZE_PHP_VERSION);
      } elseif (version_compare($GLOBALS['wp_version'], RRZE_WP_VERSION, '<')) {
-         /* Übersetzer: 1: aktuelle WP-Version, 2: erforderliche WP-Version */
+         /* translators: 1: current WordPress version, 2: required WordPress version. */
          $error = sprintf(__('The server is running WordPress version %1$s. The Plugin requires at least WordPress version %2$s.', 'rrze-qr'), $GLOBALS['wp_version'], RRZE_WP_VERSION);
      }
      return $error;
@@ -127,6 +127,5 @@ function loaded()
         $main->onLoaded();
     }
 }
-
 
 

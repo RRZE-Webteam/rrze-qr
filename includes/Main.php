@@ -33,25 +33,40 @@ class Main
         add_filter('page_row_actions', [$this, 'rrze_qr_add_download_link'], 10, 2);
         add_action('admin_menu', [$this, 'rrze_qr_admin_menu']);
         add_action('admin_init', [$this, 'rrze_qr_migrate_legacy_color_option'], 5);
-        add_action('admin_init', [$this, 'rrze_qr_register_settings']);
+        add_action('admin_init', [$this, 'rrze_qr_redirect_legacy_page']);
         add_action('wp_ajax_rrze_qr_get_permalink', [$this, 'rrze_qr_get_permalink']);
-        add_action('wp_ajax_rrze_qr_get_colors', [$this, 'rrze_qr_ajax_get_colors']);
-        add_action('wp_ajax_rrze_qr_resolve_colors', [$this, 'rrze_qr_ajax_resolve_colors']);
+        add_action('wp_ajax_rrze_qr_save_defaults', [$this, 'rrze_qr_ajax_save_defaults']);
     }
 
 
 
 
-    // Enqueue QRious library and custom scripts
     public function rrze_qr_enqueue_scripts($hook)
     {
-        // Only load scripts on appropriate admin pages
-        if (in_array($hook, ['edit.php', 'tools_page_rrze-qr', 'settings_page_rrze-qr-settings'], true)) {
-            $base = dirname($this->pluginFile);
-            $asset = require $base . '/assets/js/rrze-qr.min.asset.php';
-            wp_enqueue_script('rrze-qr-qrious', plugins_url('assets/js/qrious.min.js', $this->pluginFile), [], hash_file('sha256', $base . '/assets/js/qrious.min.js'), true);
-            wp_enqueue_script('rrze-qr-js', plugins_url('assets/js/rrze-qr.min.js', $this->pluginFile), array_merge(['jquery', 'rrze-qr-qrious'], $asset['dependencies']), $asset['version'], true);
-            wp_enqueue_style('rrze-qr-css', plugins_url('assets/css/rrze-qr.min.css', $this->pluginFile), [], hash_file('sha256', $base . '/assets/css/rrze-qr.min.css'));
+        $workspace = $hook === 'toplevel_page_rrze-qr';
+        if (!$workspace && $hook !== 'edit.php') {
+            return;
+        }
+        if ($workspace && !$this->rrze_qr_can_generate()) {
+            return;
+        }
+        $base = dirname($this->pluginFile);
+        $name = $workspace ? 'admin' : 'rrze-qr';
+        $handle = $workspace ? 'rrze-qr-admin' : 'rrze-qr-js';
+        $asset = require $base . '/assets/js/' . $name . '.min.asset.php';
+        wp_enqueue_script('rrze-qr-qrious', plugins_url('assets/js/qrious.min.js', $this->pluginFile), [], hash_file('sha256', $base . '/assets/js/qrious.min.js'), true);
+        wp_enqueue_script($handle, plugins_url('assets/js/' . $name . '.min.js', $this->pluginFile), array_merge(['rrze-qr-qrious'], $workspace ? $asset['dependencies'] : array_merge(['jquery'], $asset['dependencies'])), $asset['version'], true);
+        wp_enqueue_style('rrze-qr-css', plugins_url('assets/css/rrze-qr.min.css', $this->pluginFile), $workspace ? ['wp-components'] : [], hash_file('sha256', $base . '/assets/css/rrze-qr.min.css'));
+        if ($workspace) {
+            wp_set_script_translations($handle, 'rrze-qr', $base . '/languages');
+            wp_localize_script($handle, 'rrzeQrAdmin', [
+                'ajaxurl' => admin_url('admin-ajax.php'),
+                'nonce' => wp_create_nonce('rrze-qr-nonce'),
+                'defaults' => $this->rrze_qr_get_defaults(),
+                'initialUrl' => home_url('/'),
+                'canSaveDefaults' => current_user_can('manage_options'),
+            ]);
+        } else {
             $this->rrze_qr_localize_script();
         }
     }
@@ -65,42 +80,50 @@ class Main
         return $actions;
     }
 
-    // Add admin menu entry
+    private function rrze_qr_can_generate()
+    {
+        return current_user_can('edit_posts') || current_user_can('edit_pages') || current_user_can('manage_options');
+    }
+
     public function rrze_qr_admin_menu()
     {
-        add_submenu_page(
-            'tools.php',            // Parent slug
-            __('Generate QR Code', 'rrze-qr'),   // Page title
-            __('Generate QR Code', 'rrze-qr'),   // Menu title
-            'manage_options',       // Capability
-            'rrze-qr',              // Menu slug
-            [$this, 'rrze_qr_tools_page'] // Callback function
-        );
-
-        add_submenu_page(
-            'options-general.php',  // Parent slug
-            'RRZE QR',              // Page title
-            'RRZE QR',              // Menu title
-            'manage_options',       // Capability
-            'rrze-qr-settings',     // Menu slug
-            [$this, 'rrze_qr_settings_page'] // Callback function
+        $capability = current_user_can('manage_options') ? 'manage_options' : (current_user_can('edit_pages') ? 'edit_pages' : 'edit_posts');
+        $icon = file_get_contents(dirname($this->pluginFile) . '/assets/svg/qr_code_2_24dp_1F1F1F_FILL0_wght400_GRAD0_opsz24.svg');
+        add_menu_page(
+            __('QR-Codes', 'rrze-qr'),
+            __('QR-Codes', 'rrze-qr'),
+            $capability,
+            'rrze-qr',
+            [$this, 'rrze_qr_admin_page'],
+            'data:image/svg+xml;base64,' . base64_encode($icon),
+            80
         );
     }
 
-
-    // Register plugin settings
-    public function rrze_qr_register_settings()
+    public function rrze_qr_redirect_legacy_page()
     {
-        register_setting('rrze_qr_settings_group', 'rrze_qr_foreground', [
-            'type' => 'string',
-            'sanitize_callback' => [$this, 'rrze_qr_save_foreground'],
-            'default' => 'black',
-        ]);
-        register_setting('rrze_qr_settings_group', 'rrze_qr_background', [
-            'type' => 'string',
-            'sanitize_callback' => [$this, 'rrze_qr_save_background'],
-            'default' => 'white',
-        ]);
+        $page = $_GET['page'] ?? '';
+        if (in_array($GLOBALS['pagenow'] ?? '', ['tools.php', 'options-general.php'], true)
+            && in_array($page, ['rrze-qr', 'rrze-qr-settings'], true)
+            && $this->rrze_qr_can_generate()) {
+            wp_safe_redirect(admin_url('admin.php?page=rrze-qr'));
+            exit;
+        }
+    }
+
+    public function rrze_qr_admin_page()
+    {
+        if (!$this->rrze_qr_can_generate()) {
+            wp_die(esc_html__('You do not have permission to generate QR codes.', 'rrze-qr'), '', ['response' => 403]);
+        }
+        ?>
+        <div class="wrap rrze-qr-workspace">
+            <h1><?php esc_html_e('QR-Codes', 'rrze-qr'); ?></h1>
+            <p class="rrze-qr-intro"><?php esc_html_e('Create a QR code, adjust its appearance, and download it as a PNG.', 'rrze-qr'); ?></p>
+            <div id="rrze-qr-app"></div>
+            <noscript><p><?php esc_html_e('Enable JavaScript to use the QR code generator.', 'rrze-qr'); ?></p></noscript>
+        </div>
+        <?php
     }
 
     /**
@@ -142,28 +165,6 @@ class Main
         return $tokens['background'] === 'transparent'
             || ($tokens['foreground'] !== $tokens['background']
                 && in_array('white', $tokens, true));
-    }
-
-    public function rrze_qr_save_foreground($value)
-    {
-        $tokens = [
-            'foreground' => $this->rrze_qr_sanitize_foreground($value),
-            'background' => $this->rrze_qr_sanitize_background(wp_unslash($_POST['rrze_qr_background'] ?? get_option('rrze_qr_background', 'white'))),
-        ];
-        if (!$this->rrze_qr_valid_color_pair($tokens)) {
-            add_settings_error('rrze_qr_settings_group', 'rrze_qr_contrast', __('Choose contrasting colors. Black on white has been used instead.', 'rrze-qr'));
-            return 'black';
-        }
-        return $tokens['foreground'];
-    }
-
-    public function rrze_qr_save_background($value)
-    {
-        $tokens = [
-            'foreground' => $this->rrze_qr_sanitize_foreground(wp_unslash($_POST['rrze_qr_foreground'] ?? get_option('rrze_qr_foreground', 'black'))),
-            'background' => $this->rrze_qr_sanitize_background($value),
-        ];
-        return $this->rrze_qr_valid_color_pair($tokens) ? $tokens['background'] : 'white';
     }
 
     /**
@@ -209,15 +210,44 @@ class Main
      *
      * @return array{foreground: string, background: string}
      */
-    private function rrze_qr_get_fg_bg_tokens()
+    private function rrze_qr_get_defaults()
     {
-        $fg = get_option('rrze_qr_foreground', 'black');
-        $bg = get_option('rrze_qr_background', 'white');
+        $stored = get_option('rrze_qr_defaults', []);
+        $stored = is_array($stored) ? $stored : [];
         $tokens = [
-            'foreground' => $this->rrze_qr_sanitize_foreground($fg),
-            'background' => $this->rrze_qr_sanitize_background($bg),
+            'foreground' => $this->rrze_qr_sanitize_foreground($stored['foreground'] ?? get_option('rrze_qr_foreground', 'black')),
+            'background' => $this->rrze_qr_sanitize_background($stored['background'] ?? get_option('rrze_qr_background', 'white')),
         ];
-        return $this->rrze_qr_valid_color_pair($tokens) ? $tokens : ['foreground' => 'black', 'background' => 'white'];
+        if (!$this->rrze_qr_valid_color_pair($tokens)) {
+            $tokens = ['foreground' => 'black', 'background' => 'white'];
+        }
+        $tokens['size'] = in_array($stored['size'] ?? null, [300, 600, 1200], true) ? $stored['size'] : 300;
+        return $tokens;
+    }
+
+    public function rrze_qr_ajax_save_defaults()
+    {
+        check_ajax_referer('rrze-qr-nonce', 'nonce');
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(__('Only administrators can save site defaults.', 'rrze-qr'), 403);
+        }
+        $fg = isset($_POST['foreground']) ? wp_unslash($_POST['foreground']) : null;
+        $bg = isset($_POST['background']) ? wp_unslash($_POST['background']) : null;
+        $size = $_POST['size'] ?? null;
+        if (!in_array($fg, $this->rrze_qr_foreground_allowed(), true)
+            || !in_array($bg, $this->rrze_qr_background_allowed(), true)
+            || !in_array($size, ['300', '600', '1200'], true)) {
+            wp_send_json_error(__('Choose valid colors and an export size.', 'rrze-qr'), 400);
+        }
+        $defaults = ['foreground' => $fg, 'background' => $bg, 'size' => (int) $size];
+        if (!$this->rrze_qr_valid_color_pair(['foreground' => $fg, 'background' => $bg])) {
+            wp_send_json_error(__('Choose contrasting foreground and background colors.', 'rrze-qr'), 400);
+        }
+        update_option('rrze_qr_defaults', $defaults);
+        if (get_option('rrze_qr_defaults') !== $defaults) {
+            wp_send_json_error(__('The defaults could not be saved. Please try again.', 'rrze-qr'), 500);
+        }
+        wp_send_json_success($defaults);
     }
 
     /**
@@ -258,105 +288,7 @@ class Main
      */
     private function rrze_qr_colors_for_qrious()
     {
-        return $this->rrze_qr_colors_for_qrious_from_tokens($this->rrze_qr_get_fg_bg_tokens());
-    }
-
-    // Tools page content
-    public function rrze_qr_tools_page()
-    {
-        ?>
-        <div class="wrap">
-            <h1><?php esc_html_e('QR Code Generator', 'rrze-qr'); ?></h1>
-            <form id="rrze-qr-form">
-                <label for="rrze-qr-url"><?php esc_html_e('URL:', 'rrze-qr'); ?></label>
-                <input type="url" id="rrze-qr-url" name="rrze-qr-url" required>
-                <button type="submit" class="button button-primary"><?php esc_html_e('Generate QR Code', 'rrze-qr'); ?></button>
-            </form>
-            <p id="rrze-qr-status" role="status" aria-live="polite"></p>
-            <canvas role="img" aria-label="<?php esc_attr_e('Generated QR code', 'rrze-qr'); ?>" id="rrze-qr-canvas" class="rrze-qr-canvas rrze-qr--hidden" width="300" height="300"></canvas>
-            <a id="rrze-qr-download" class="button button-primary rrze-qr-download-link rrze-qr--hidden" download="qr-code.png" href="#"><?php esc_html_e('Download QR Code', 'rrze-qr'); ?></a>
-        </div>
-        <?php
-    }
-
-    // Admin settings page content
-    public function rrze_qr_settings_page()
-    {
-        $tokens = $this->rrze_qr_get_fg_bg_tokens();
-        $foreground = $tokens['foreground'];
-        $background = $tokens['background'];
-        ?>
-        <div class="wrap">
-            <h1>RRZE QR</h1>
-            <?php settings_errors('rrze_qr_settings_group'); ?>
-
-            <form method="post" action="options.php">
-                <?php settings_fields('rrze_qr_settings_group'); ?>
-                <table class="form-table rrze-qr-settings" role="presentation">
-                    <tr>
-                        <td class="rrze-qr-settings__col rrze-qr-settings__col--first">
-                            <p class="rrze-qr-settings__heading"><strong><?php esc_html_e('Foreground', 'rrze-qr'); ?></strong></p>
-                            <fieldset class="rrze-qr-settings__fieldset">
-                                <legend class="screen-reader-text"><?php esc_html_e('Foreground', 'rrze-qr'); ?></legend>
-                                <label class="rrze-qr-settings__label">
-                                    <input type="radio" name="rrze_qr_foreground" value="white" <?php checked($foreground, 'white'); ?>>
-                                    <?php esc_html_e('White', 'rrze-qr'); ?>
-                                </label>
-                                <br>
-                                <label class="rrze-qr-settings__label">
-                                    <input type="radio" name="rrze_qr_foreground" value="black" <?php checked($foreground, 'black'); ?>>
-                                    <?php esc_html_e('Black', 'rrze-qr'); ?>
-                                </label>
-                                <br>
-                                <label class="rrze-qr-settings__label">
-                                    <input type="radio" name="rrze_qr_foreground" value="fau" <?php checked($foreground, 'fau'); ?>>
-                                    <?php esc_html_e('FAU Blue', 'rrze-qr'); ?>
-                                </label>
-                            </fieldset>
-                        </td>
-                        <td class="rrze-qr-settings__col">
-                            <p class="rrze-qr-settings__heading"><strong><?php esc_html_e('Background', 'rrze-qr'); ?></strong></p>
-                            <fieldset class="rrze-qr-settings__fieldset">
-                                <legend class="screen-reader-text"><?php esc_html_e('Background', 'rrze-qr'); ?></legend>
-                                <label class="rrze-qr-settings__label">
-                                    <input type="radio" name="rrze_qr_background" value="white" <?php checked($background, 'white'); ?>>
-                                    <?php esc_html_e('White', 'rrze-qr'); ?>
-                                </label>
-                                <br>
-                                <label class="rrze-qr-settings__label">
-                                    <input type="radio" name="rrze_qr_background" value="black" <?php checked($background, 'black'); ?>>
-                                    <?php esc_html_e('Black', 'rrze-qr'); ?>
-                                </label>
-                                <br>
-                                <label class="rrze-qr-settings__label">
-                                    <input type="radio" name="rrze_qr_background" value="fau" <?php checked($background, 'fau'); ?>>
-                                    <?php esc_html_e('FAU Blue', 'rrze-qr'); ?>
-                                </label>
-                                <br>
-                                <label class="rrze-qr-settings__label">
-                                    <input type="radio" name="rrze_qr_background" value="transparent" <?php checked($background, 'transparent'); ?>>
-                                    <?php esc_html_e('Transparent', 'rrze-qr'); ?>
-                                </label>
-                            </fieldset>
-                        </td>
-                    </tr>
-                </table>
-                <div class="rrze-qr-settings__preview-wrap">
-                    <h2><?php esc_html_e('QR Code Preview', 'rrze-qr'); ?></h2>
-                    <p id="rrze-qr-preview-help"><?php esc_html_e('Transparent codes need a contrasting surface. Test the downloaded code on its intended background before publishing.', 'rrze-qr'); ?></p>
-                    <label for="rrze-qr-preview-surface"><?php esc_html_e('Preview background:', 'rrze-qr'); ?></label>
-                    <select id="rrze-qr-preview-surface">
-                        <option value="checkerboard"><?php esc_html_e('Checkerboard', 'rrze-qr'); ?></option>
-                        <option value="white"><?php esc_html_e('White', 'rrze-qr'); ?></option>
-                        <option value="black"><?php esc_html_e('Black', 'rrze-qr'); ?></option>
-                    </select>
-                    <canvas id="rrze-qr-settings-preview" class="rrze-qr-settings__preview-canvas" width="180" height="180" role="img" aria-label="<?php esc_attr_e('QR code preview for this site', 'rrze-qr'); ?>" aria-describedby="rrze-qr-preview-help"></canvas>
-                    <p id="rrze-qr-preview-status" role="status" aria-live="polite"></p>
-                </div>
-                <?php submit_button(); ?>
-            </form>
-        </div>
-        <?php
+        return $this->rrze_qr_colors_for_qrious_from_tokens($this->rrze_qr_get_defaults());
     }
 
     // Handle AJAX request to get permalink
@@ -376,7 +308,7 @@ class Main
         $permalink = get_permalink($post_id);
 
         if ($permalink) {
-            wp_send_json_success(['url' => $permalink, 'colors' => $this->rrze_qr_colors_for_qrious()]);
+            wp_send_json_success(['url' => $permalink, 'colors' => $this->rrze_qr_colors_for_qrious(), 'size' => $this->rrze_qr_get_defaults()['size']]);
         } else {
             wp_send_json_error(__('Could not retrieve permalink.', 'rrze-qr'), 404);
         }
@@ -390,39 +322,6 @@ class Main
             && current_user_can('edit_post', $post->ID);
     }
 
-    /**
-     * Aktuelle gespeicherte Farben (für QR-Erzeugung ohne Admin-Seite neu laden).
-     */
-    public function rrze_qr_ajax_get_colors()
-    {
-        check_ajax_referer('rrze-qr-nonce', 'nonce');
-        if (!current_user_can('edit_posts') && !current_user_can('edit_pages') && !current_user_can('manage_options')) {
-            wp_send_json_error('', 403);
-        }
-        wp_send_json_success($this->rrze_qr_colors_for_qrious());
-    }
-
-    /**
-     * Farben aus Vorder-/Hintergrundwahl (für Live-Vorschau in den Einstellungen).
-     */
-    public function rrze_qr_ajax_resolve_colors()
-    {
-        check_ajax_referer('rrze-qr-nonce', 'nonce');
-        if (! current_user_can('manage_options')) {
-            wp_send_json_error('', 403);
-        }
-        $fg = isset($_POST['foreground']) ? wp_unslash($_POST['foreground']) : '';
-        $bg = isset($_POST['background']) ? wp_unslash($_POST['background']) : '';
-        $tokens = [
-            'foreground' => $this->rrze_qr_sanitize_foreground($fg),
-            'background' => $this->rrze_qr_sanitize_background($bg),
-        ];
-        if (!$this->rrze_qr_valid_color_pair($tokens)) {
-            wp_send_json_error(__('Choose contrasting foreground and background colors.', 'rrze-qr'), 400);
-        }
-        wp_send_json_success($this->rrze_qr_colors_for_qrious_from_tokens($tokens));
-    }
-
     // Localize script for AJAX
     public function rrze_qr_localize_script()
     {
@@ -432,8 +331,6 @@ class Main
             [
                 'ajaxurl' => admin_url('admin-ajax.php'),
                 'nonce' => wp_create_nonce('rrze-qr-nonce'),
-                'colors' => $this->rrze_qr_colors_for_qrious(),
-                'previewSampleUrl' => home_url('/'),
                 'strings' => [
                     'invalidUrl' => __('Enter a valid HTTP or HTTPS URL.', 'rrze-qr'),
                     'tooLong' => __('This URL is too long for a QR code. Use a shorter URL (maximum 2,953 encoded characters).', 'rrze-qr'),
@@ -441,9 +338,6 @@ class Main
                     'generationFailed' => __('The QR code could not be generated. Reload the page and try again.', 'rrze-qr'),
                     'generating' => __('Generating QR code…', 'rrze-qr'),
                     'downloadStarted' => __('QR code download started.', 'rrze-qr'),
-                    'ready' => __('QR code is ready.', 'rrze-qr'),
-                    'updatingPreview' => __('Updating preview…', 'rrze-qr'),
-                    'previewUpdated' => __('Preview updated.', 'rrze-qr'),
                 ],
             ]
         );

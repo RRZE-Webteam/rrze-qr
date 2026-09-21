@@ -1,8 +1,8 @@
 # RRZE QR
 
-Generate and download QR codes in the WordPress administration area. QR images
-are created locally in the browser with QRious; no external QR service receives
-the URL.
+Create, configure, and download QR codes from the **QR-Codes** menu in WordPress.
+The workspace uses WordPress components and WordPress's bundled React. QR images
+are generated locally in the browser; no external QR service receives the URL.
 
 ## Requirements
 
@@ -10,44 +10,48 @@ the URL.
 - PHP 8.2 or newer
 - JavaScript enabled in the administration area
 
-## Usage
+## QR-Codes workspace
 
-### Published posts and pages
+Authors, editors, administrators, and custom roles with permission to edit posts
+or pages can use the workspace. Enter an HTTP or HTTPS destination URL and adjust:
 
-Use **Download QR** in the posts or pages list to download a PNG containing the
-item's permalink. The action is available for published posts and pages that the
-current user can edit. The server enforces the same restrictions.
+- Foreground: black, white, or FAU blue
+- Background: black, white, FAU blue, or transparent
+- Export size: approximately 300, 600, or 1200 pixels
 
-### Custom URLs
+The preview updates automatically. **Download PNG** exports the current code.
+A transparent preview has a background selector; this affects the preview only,
+and the downloaded image remains transparent.
 
-Administrators can open **Tools → Generate QR Code**, enter an HTTP or HTTPS URL,
-and generate a preview with a download link. Generating another code updates the
-same download link. Editing the URL hides the previous result.
+Changes apply to the current download. Administrators can explicitly **Save as
+defaults** to set the colors and export size for future codes, including downloads
+from post and page lists. The destination URL is never saved as a site default.
+**Reset to defaults** restores the saved appearance without changing the URL.
 
-Validation checks the URL format and QR capacity. It does **not** visit the URL,
+Existing color settings are retained when upgrading. Bookmarks to the former
+Tools and Settings pages redirect to the new workspace.
+
+## Downloads from post and page lists
+
+Use **Download QR** on a published post or page that you can edit. The download
+uses the item's permalink and the site's current default colors and size. The
+server enforces the same publication and permission requirements as the row action.
+
+## Validation and scanning
+
+Validation checks the URL format and QR capacity. It does not visit the URL,
 check its HTTP status, or guarantee that its destination is reachable.
-International domain names and paths are normalized to an ASCII URL before
-encoding. URLs longer than 2,953 encoded characters are rejected.
+International domain names and paths are normalized to an ASCII URL. URLs longer
+than 2,953 encoded characters are rejected.
 
-### Colors and preview
+Solid color pairs must contrast: one must be white and the other black or FAU
+blue. Invalid pairs cannot be downloaded or saved. Transparent codes need a
+contrasting surface; test transparent or inverted codes with the intended scanner
+and background before publishing or printing.
 
-Under **Settings → RRZE QR**, administrators can choose white, black, or FAU blue
-for the foreground, and white, black, FAU blue, or transparency for the background.
-The live preview uses the site's home URL. Its background selector helps evaluate
-transparent output without changing the downloaded image.
-
-Solid colors must contrast: one must be white and the other black or FAU blue.
-Invalid saved combinations fall back to black on white with a settings message.
-Transparent codes require a contrasting surface. Test inverted or transparent
-codes with the intended scanners and background before publishing or printing.
-
-### Export behavior
-
-- PNG downloads use error correction level L.
-- Every image reserves a four-module quiet zone on all sides.
-- Image dimensions adapt to the QR version, with at least two pixels per module.
-  Typical exports are approximately 300 pixels wide; dense codes can be larger.
-- Network or generation failures appear alongside the relevant control.
+PNG exports use error correction level L and include a four-module quiet zone.
+Dimensions adapt to the QR version so each module occupies whole pixels, with at
+least two pixels per module. Dense codes can exceed the smallest requested size.
 
 ## Development
 
@@ -59,31 +63,29 @@ npm run lint:js
 npm run lint:php
 ```
 
-The lockfile pins dependencies. Builds generate the committed files in `assets/`
+The lockfile pins dependencies. Builds regenerate the committed files in `assets/`
 and do not change the plugin version. Use `npm run release:patch` or
-`npm run release:minor` explicitly when preparing a release, then review the
-version changes.
+`npm run release:minor` explicitly when preparing a release.
 
-Tests cover QR decoding and capacity boundaries, quiet zones, repeated generation,
-request failures and response ordering, endpoint permissions, settings colors,
-preview markup, asset versions, and translated feedback. PHP checks use isolated
-WordPress stubs and do not alter the database. Browser, scanner, and real WordPress
-role testing remain useful release checks.
+The React workspace has its own entry point in `src/js/admin.js`. WordPress supplies
+`wp-components`, `wp-element`, `wp-i18n`, and the components stylesheet. JSX uses
+the classic transform to support WordPress 6.4. The small post-list entry point
+uses WordPress's `jquery` dependency; npm jQuery is only for development tests.
+QRious is copied from the locked npm dependency when building.
 
-## Libraries and translations
+Automated checks cover QR decoding and capacity, quiet zones, color combinations,
+post downloads, permissions, default persistence, legacy settings, and asset
+registration. PHP checks use isolated WordPress stubs and do not change the
+database. Browser interaction and visual checks are performed manually.
 
-WordPress supplies jQuery through the script's `jquery` enqueue dependency. The
-npm jQuery package is used only by development tests. QRious is copied from the
-locked npm dependency into `assets/js/qrious.min.js` during the build.
-
-Interface strings use the `rrze-qr` text domain. A translation template and German
-translations are included in `languages/`.
+Interface strings use the `rrze-qr` text domain. PHP and JavaScript German
+translations are included in `languages/`. The JavaScript translation map in
+`languages/source-map.json` maps source references to the built entry point.
 
 ## License
 
 Licensed under the [GNU General Public License v3.0 or later](https://www.gnu.org/licenses/gpl-3.0.html).
-
-See [LICENSE](LICENSE) for the license text and [third-party notices](THIRD-PARTY-NOTICES.md) for QRious attribution.
+See [LICENSE](LICENSE) and [third-party notices](THIRD-PARTY-NOTICES.md).
 
 Developed by the [RRZE Webteam](https://github.com/RRZE-Webteam),
 Friedrich-Alexander-Universität Erlangen-Nürnberg (FAU).

@@ -1,5 +1,5 @@
 # Copyright (C) 2026 RRZE Webteam
-# This file is distributed under the GPL-3.0-or-later license.
+# This file is distributed under the GPL-3.0-or-later.
 msgid ""
 msgstr ""
 "Project-Id-Version: RRZE QR 1.1.0\n"
@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-09-21T11:50:51+00:00\n"
+"POT-Creation-Date: 2026-09-21T13:03:26+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: rrze-qr\n"
@@ -39,145 +39,219 @@ msgstr ""
 msgid "https://blogs.fau.de/webworking/"
 msgstr ""
 
-#: includes/Main.php:63
+#: includes/Main.php:78
 msgid "Download QR"
 msgstr ""
 
-#: includes/Main.php:73
-#: includes/Main.php:74
-#: includes/Main.php:273
-msgid "Generate QR Code"
+#: includes/Main.php:93
+#: includes/Main.php:94
+#: includes/Main.php:121
+msgid "QR-Codes"
 msgstr ""
 
-#: includes/Main.php:154
-msgid "Choose contrasting colors. Black on white has been used instead."
+#: includes/Main.php:117
+msgid "You do not have permission to generate QR codes."
 msgstr ""
 
-#: includes/Main.php:269
-msgid "QR Code Generator"
+#: includes/Main.php:122
+msgid "Create a QR code, adjust its appearance, and download it as a PNG."
 msgstr ""
 
-#: includes/Main.php:271
-msgid "URL:"
+#: includes/Main.php:124
+msgid "Enable JavaScript to use the QR code generator."
 msgstr ""
 
-#: includes/Main.php:276
-msgid "Generated QR code"
+#: includes/Main.php:232
+msgid "Only administrators can save site defaults."
 msgstr ""
 
-#: includes/Main.php:277
-msgid "Download QR Code"
+#: includes/Main.php:240
+msgid "Choose valid colors and an export size."
 msgstr ""
 
-#: includes/Main.php:298
-#: includes/Main.php:300
-msgid "Foreground"
-msgstr ""
-
-#: includes/Main.php:303
-#: includes/Main.php:323
-#: includes/Main.php:350
-msgid "White"
-msgstr ""
-
-#: includes/Main.php:308
-#: includes/Main.php:328
-#: includes/Main.php:351
-msgid "Black"
-msgstr ""
-
-#: includes/Main.php:313
-#: includes/Main.php:333
-msgid "FAU Blue"
-msgstr ""
-
-#: includes/Main.php:318
-#: includes/Main.php:320
-msgid "Background"
-msgstr ""
-
-#: includes/Main.php:338
-msgid "Transparent"
-msgstr ""
-
-#: includes/Main.php:345
-msgid "QR Code Preview"
-msgstr ""
-
-#: includes/Main.php:346
-msgid "Transparent codes need a contrasting surface. Test the downloaded code on its intended background before publishing."
-msgstr ""
-
-#: includes/Main.php:347
-msgid "Preview background:"
-msgstr ""
-
-#: includes/Main.php:349
-msgid "Checkerboard"
-msgstr ""
-
-#: includes/Main.php:353
-msgid "QR code preview for this site"
-msgstr ""
-
-#: includes/Main.php:370
-msgid "Invalid post ID."
-msgstr ""
-
-#: includes/Main.php:374
-msgid "You cannot generate a QR code for this post."
-msgstr ""
-
-#: includes/Main.php:381
-msgid "Could not retrieve permalink."
-msgstr ""
-
-#: includes/Main.php:421
+#: includes/Main.php:244
+#: src/js/admin.js:12
 msgid "Choose contrasting foreground and background colors."
 msgstr ""
 
-#: includes/Main.php:438
+#: includes/Main.php:248
+msgid "The defaults could not be saved. Please try again."
+msgstr ""
+
+#: includes/Main.php:302
+msgid "Invalid post ID."
+msgstr ""
+
+#: includes/Main.php:306
+msgid "You cannot generate a QR code for this post."
+msgstr ""
+
+#: includes/Main.php:313
+msgid "Could not retrieve permalink."
+msgstr ""
+
+#: includes/Main.php:335
+#: src/js/admin.js:10
 msgid "Enter a valid HTTP or HTTPS URL."
 msgstr ""
 
-#: includes/Main.php:439
+#: includes/Main.php:336
+#: src/js/admin.js:11
 msgid "This URL is too long for a QR code. Use a shorter URL (maximum 2,953 encoded characters)."
 msgstr ""
 
-#: includes/Main.php:440
+#: includes/Main.php:337
 msgid "The request failed. Reload the page and try again."
 msgstr ""
 
-#: includes/Main.php:441
+#: includes/Main.php:338
+#: src/js/admin.js:13
 msgid "The QR code could not be generated. Reload the page and try again."
 msgstr ""
 
-#: includes/Main.php:442
+#: includes/Main.php:339
+#: src/js/admin.js:137
 msgid "Generating QR code…"
 msgstr ""
 
-#: includes/Main.php:443
+#: includes/Main.php:340
 msgid "QR code download started."
 msgstr ""
 
-#: includes/Main.php:444
-msgid "QR code is ready."
-msgstr ""
-
-#: includes/Main.php:445
-msgid "Updating preview…"
-msgstr ""
-
-#: includes/Main.php:446
-msgid "Preview updated."
-msgstr ""
-
+#. translators: 1: current PHP version, 2: required PHP version.
 #: rrze-qr.php:71
 #, php-format
 msgid "The server is running PHP version %1$s. The Plugin requires at least PHP version %2$s."
 msgstr ""
 
+#. translators: 1: current WordPress version, 2: required WordPress version.
 #: rrze-qr.php:74
 #, php-format
 msgid "The server is running WordPress version %1$s. The Plugin requires at least WordPress version %2$s."
+msgstr ""
+
+#. translators: %1$d: width and height of the square image in pixels.
+#: src/js/admin.js:18
+#, js-format
+msgid "PNG · %1$d × %1$d px"
+msgstr ""
+
+#: src/js/admin.js:78
+#: src/js/admin.js:83
+msgid "The defaults could not be saved. Reload the page and try again."
+msgstr ""
+
+#: src/js/admin.js:81
+msgid "Site defaults saved. New QR codes will use these settings."
+msgstr ""
+
+#: src/js/admin.js:90
+#: src/js/admin.js:141
+msgid "Black"
+msgstr ""
+
+#: src/js/admin.js:91
+#: src/js/admin.js:141
+msgid "White"
+msgstr ""
+
+#: src/js/admin.js:92
+msgid "FAU Blue"
+msgstr ""
+
+#: src/js/admin.js:99
+msgid "Configure your QR code"
+msgstr ""
+
+#: src/js/admin.js:101
+msgid "Destination URL"
+msgstr ""
+
+#: src/js/admin.js:104
+msgid "Enter an HTTP or HTTPS URL. The preview updates automatically."
+msgstr ""
+
+#: src/js/admin.js:107
+msgid "Foreground"
+msgstr ""
+
+#: src/js/admin.js:108
+msgid "Background"
+msgstr ""
+
+#: src/js/admin.js:108
+msgid "Transparent"
+msgstr ""
+
+#: src/js/admin.js:111
+msgid "Export size"
+msgstr ""
+
+#: src/js/admin.js:113
+msgid "Small — approximately 300 px"
+msgstr ""
+
+#: src/js/admin.js:114
+msgid "Medium — approximately 600 px"
+msgstr ""
+
+#: src/js/admin.js:115
+msgid "Large — approximately 1200 px"
+msgstr ""
+
+#: src/js/admin.js:118
+msgid "The exact dimensions adapt to keep the QR pattern sharp and include a clear margin."
+msgstr ""
+
+#: src/js/admin.js:121
+msgid "These controls change your current download. Site defaults are saved separately."
+msgstr ""
+
+#: src/js/admin.js:123
+msgid "Reset to defaults"
+msgstr ""
+
+#: src/js/admin.js:124
+msgid "Saving…"
+msgstr ""
+
+#: src/js/admin.js:124
+msgid "Save as defaults"
+msgstr ""
+
+#: src/js/admin.js:132
+msgid "Preview and download"
+msgstr ""
+
+#: src/js/admin.js:136
+msgid "Generated QR code"
+msgstr ""
+
+#: src/js/admin.js:137
+msgid "Update the settings to generate a QR code."
+msgstr ""
+
+#: src/js/admin.js:137
+msgid "Enter a URL to see your QR code."
+msgstr ""
+
+#: src/js/admin.js:140
+msgid "Preview background"
+msgstr ""
+
+#: src/js/admin.js:141
+msgid "Checkerboard"
+msgstr ""
+
+#: src/js/admin.js:142
+msgid "This background is only for the preview; the downloaded PNG stays transparent."
+msgstr ""
+
+#: src/js/admin.js:144
+msgid "Test this code on its intended background. Transparent or inverted codes may not work with every scanner."
+msgstr ""
+
+#: src/js/admin.js:148
+#: src/js/admin.js:149
+msgid "Download PNG"
 msgstr ""

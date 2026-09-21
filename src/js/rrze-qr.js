@@ -1,4 +1,4 @@
-const { createQr, normalizeUrl } = require('./qr-code');
+const { createQr } = require('./qr-code');
 
 jQuery(document).ready(function ($) {
     function text(key) {
@@ -59,7 +59,7 @@ jQuery(document).ready(function ($) {
         status($status, text('generating'));
         try {
             const data = await request({ action: 'rrze_qr_get_permalink', post_id: $link.data('id') });
-            const qr = render(Object.assign({ value: data.url, size: 300 }, colorOptions(data.colors)));
+            const qr = render(Object.assign({ value: data.url, size: data.size || 300 }, colorOptions(data.colors)));
             const download = $('<a>').attr({ href: qr.toDataURL(), download: 'qr-code-' + $link.data('id') + '.png' });
             $link.after(download);
             download[0].click();
@@ -72,72 +72,4 @@ jQuery(document).ready(function ($) {
         }
     });
 
-    const $form = $('#rrze-qr-form');
-    const $submit = $form.find('button[type="submit"]');
-    const $status = $('#rrze-qr-status');
-    let generation = 0;
-    function hideResult() {
-        $('#rrze-qr-download, #rrze-qr-canvas').addClass('rrze-qr--hidden');
-        $('#rrze-qr-download').removeAttr('href');
-    }
-    $('#rrze-qr-url').on('input', function () {
-        generation++;
-        hideResult();
-        $submit.prop('disabled', false);
-        $form.removeAttr('aria-busy');
-        status($status, '');
-    });
-    $form.on('submit', async function (event) {
-        event.preventDefault();
-        const current = ++generation;
-        hideResult();
-        $submit.prop('disabled', true);
-        $form.attr('aria-busy', 'true');
-        status($status, text('generating'));
-        try {
-            const url = normalizeUrl($('#rrze-qr-url').val());
-            const colors = await request({ action: 'rrze_qr_get_colors' });
-            if (current !== generation) { return; }
-            const qr = render(Object.assign({ value: url, size: 300, element: $('#rrze-qr-canvas')[0] }, colorOptions(colors)));
-            $('#rrze-qr-canvas').removeClass('rrze-qr--hidden');
-            $('#rrze-qr-download').attr('href', qr.toDataURL()).removeClass('rrze-qr--hidden');
-            status($status, text('ready'));
-        } catch (error) {
-            if (current === generation) { status($status, errorText(error)); }
-        } finally {
-            if (current === generation) {
-                $submit.prop('disabled', false);
-                $form.removeAttr('aria-busy');
-            }
-        }
-    });
-
-    const $preview = $('#rrze-qr-settings-preview');
-    $('#rrze-qr-preview-surface').on('change', function () {
-        $preview.css('background', this.value === 'checkerboard' ? '' : this.value);
-    });
-    let previewGeneration = 0;
-    async function updatePreview() {
-        const current = ++previewGeneration;
-        const $previewStatus = $('#rrze-qr-preview-status');
-        $preview.addClass('rrze-qr--hidden');
-        status($previewStatus, text('updatingPreview'));
-        try {
-            const colors = await request({
-                action: 'rrze_qr_resolve_colors',
-                foreground: $('input[name="rrze_qr_foreground"]:checked').val(),
-                background: $('input[name="rrze_qr_background"]:checked').val()
-            });
-            if (current !== previewGeneration) { return; }
-            render(Object.assign({ element: $preview[0], value: rrzeQr.previewSampleUrl, size: 180 }, colorOptions(colors)));
-            $preview.removeClass('rrze-qr--hidden');
-            status($previewStatus, text('previewUpdated'));
-        } catch (error) {
-            if (current === previewGeneration) { status($previewStatus, errorText(error)); }
-        }
-    }
-    if ($preview.length) {
-        $('input[name="rrze_qr_foreground"], input[name="rrze_qr_background"]').on('change', updatePreview);
-        updatePreview();
-    }
 });
