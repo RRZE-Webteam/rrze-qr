@@ -23,7 +23,8 @@
   },
   "devDependencies": {
     "@wordpress/scripts": "^30.7.0",
-    "sass": "^1.87.0"
+    "sass": "^1.87.0",
+    "jsqr": "^1.4.0"
   },
   "dependencies": {
     "jquery": "^3.7.1",

@@ -1,4 +1,15 @@
+const { createQr } = require('./qr-code');
+
 jQuery(document).ready(function ($) {
+    function rrzeQrCreate(options) {
+        try {
+            return createQr(QRious, options);
+        } catch (error) {
+            alert(error.message);
+            return null;
+        }
+    }
+
     function rrzeQrColorOptionsFromPayload (colors) {
         var c = colors || {};
         return {
@@ -44,7 +55,7 @@ jQuery(document).ready(function ($) {
                 }
                 var postUrl = response.data;
                 rrzeQrWithFreshColors(function (colors) {
-                    var qr = new QRious(
+                    var qr = rrzeQrCreate(
                         Object.assign(
                             {
                                 value: postUrl,
@@ -54,6 +65,7 @@ jQuery(document).ready(function ($) {
                         )
                     );
 
+                    if (!qr) { return; }
                     var link = $('<a>')
                         .attr('href', qr.toDataURL())
                         .attr('download', 'qr-code.png')
@@ -72,7 +84,7 @@ jQuery(document).ready(function ($) {
         var canvas = $('#rrze-qr-canvas')[0];
 
         rrzeQrWithFreshColors(function (colors) {
-            var qr = new QRious(
+            var qr = rrzeQrCreate(
                 Object.assign(
                     {
                         value: url,
@@ -83,6 +95,7 @@ jQuery(document).ready(function ($) {
                 )
             );
 
+            if (!qr) { return; }
             $('#rrze-qr-canvas').removeClass('rrze-qr--hidden');
 
             var downloadLink = $('<a>')
@@ -118,7 +131,7 @@ jQuery(document).ready(function ($) {
                     if (!canvasEl) {
                         return;
                     }
-                    new QRious(
+                    rrzeQrCreate(
                         Object.assign(
                             {
                                 element: canvasEl,
