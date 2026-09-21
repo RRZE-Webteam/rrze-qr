@@ -1,153 +1,128 @@
-const { createQr } = require('./qr-code');
+const { createQr, normalizeUrl } = require('./qr-code');
 
 jQuery(document).ready(function ($) {
-    function rrzeQrCreate(options) {
-        try {
-            return createQr(QRious, options);
-        } catch (error) {
-            alert(error.message);
-            return null;
-        }
-    }
-
-    function rrzeQrColorOptionsFromPayload (colors) {
-        var c = colors || {};
+    function colorOptions(colors) {
         return {
-            foreground: c.foreground || 'black',
-            background: c.background || 'white',
-            backgroundAlpha: typeof c.backgroundAlpha === 'number' ? c.backgroundAlpha : 1
+            foreground: colors.foreground,
+            background: colors.background,
+            backgroundAlpha: colors.backgroundAlpha
         };
     }
 
-    function rrzeQrWithFreshColors (callback) {
-        $.post(
-            rrzeQr.ajaxurl,
-            {
-                action: 'rrze_qr_get_colors',
-                nonce: rrzeQr.nonce
-            },
-            function (res) {
-                var colors = res.success && res.data ? res.data : (rrzeQr.colors || {});
-                callback(colors);
+    async function request(data) {
+        try {
+            const response = await $.ajax({
+                url: rrzeQr.ajaxurl,
+                method: 'POST',
+                data: Object.assign({ nonce: rrzeQr.nonce }, data),
+                timeout: 15000
+            });
+            if (!response || !response.success || !response.data) {
+                throw new Error(typeof response?.data === 'string' ? response.data : 'The request failed. Reload the page and try again.');
             }
-        ).fail(function () {
-            callback(rrzeQr.colors || {});
-        });
+            return response.data;
+        } catch (error) {
+            if (error instanceof Error) { throw error; }
+            throw new Error(typeof error.responseJSON?.data === 'string' ? error.responseJSON.data : 'The request failed. Reload the page and try again.');
+        }
     }
 
-    $('.download-qr').on('click', function (event) {
+    function status($element, message) {
+        $element.text(message);
+    }
+
+    $(document).on('click', '.download-qr', async function (event) {
         event.preventDefault();
-        var postId = $(this).data('id');
-        var nonce = rrzeQr.nonce;
-        var $target = $(event.target);
-
-        $.post(
-            rrzeQr.ajaxurl,
-            {
-                action: 'rrze_qr_get_permalink',
-                nonce: nonce,
-                post_id: postId
-            },
-            function (response) {
-                if (!response.success) {
-                    alert(response.data);
-                    return;
-                }
-                var postUrl = response.data;
-                rrzeQrWithFreshColors(function (colors) {
-                    var qr = rrzeQrCreate(
-                        Object.assign(
-                            {
-                                value: postUrl,
-                                size: 300
-                            },
-                            rrzeQrColorOptionsFromPayload(colors)
-                        )
-                    );
-
-                    if (!qr) { return; }
-                    var link = $('<a>')
-                        .attr('href', qr.toDataURL())
-                        .attr('download', 'qr-code.png')
-                        .text('Download QR Code');
-                    $target.after(link);
-                    link[0].click();
-                    link.remove();
-                });
-            }
-        );
-    });
-
-    $('#rrze-qr-form').on('submit', function (event) {
-        event.preventDefault();
-        var url = $('#rrze-qr-url').val();
-        var canvas = $('#rrze-qr-canvas')[0];
-        $('#rrze-qr-download, #rrze-qr-canvas').addClass('rrze-qr--hidden');
-
-        rrzeQrWithFreshColors(function (colors) {
-            var qr = rrzeQrCreate(
-                Object.assign(
-                    {
-                        value: url,
-                        size: 300,
-                        element: canvas
-                    },
-                    rrzeQrColorOptionsFromPayload(colors)
-                )
-            );
-
-            if (!qr) { return; }
-            $('#rrze-qr-canvas').removeClass('rrze-qr--hidden');
-
-            $('#rrze-qr-download')
-                .attr('href', qr.toDataURL())
-                .removeClass('rrze-qr--hidden');
-        });
-    });
-
-    var $settingsPreview = $('#rrze-qr-settings-preview');
-    $('#rrze-qr-preview-surface').on('change', function () {
-        $settingsPreview.css('background', this.value === 'checkerboard' ? '' : this.value);
-    });
-    if ($settingsPreview.length && typeof QRious !== 'undefined') {
-        var sampleUrl =
-            rrzeQr.previewSampleUrl || window.location.href.split('#')[0];
-        function rrzeQrUpdateSettingsPreview () {
-            var fg = $('input[name="rrze_qr_foreground"]:checked').val();
-            var bg = $('input[name="rrze_qr_background"]:checked').val();
-            $.post(
-                rrzeQr.ajaxurl,
-                {
-                    action: 'rrze_qr_resolve_colors',
-                    nonce: rrzeQr.nonce,
-                    foreground: fg,
-                    background: bg
-                },
-                function (res) {
-                    if (!res.success || !res.data) {
-                        return;
-                    }
-                    var canvasEl = document.getElementById('rrze-qr-settings-preview');
-                    if (!canvasEl) {
-                        return;
-                    }
-                    rrzeQrCreate(
-                        Object.assign(
-                            {
-                                element: canvasEl,
-                                value: sampleUrl,
-                                size: 180
-                            },
-                            rrzeQrColorOptionsFromPayload(res.data)
-                        )
-                    );
-                }
-            );
+        const $link = $(this);
+        if ($link.attr('aria-disabled') === 'true') { return; }
+        let $status = $link.siblings('.rrze-qr-row-status');
+        if (!$status.length) {
+            $status = $('<span class="rrze-qr-row-status" role="status" aria-live="polite"></span>');
+            $link.after($status);
         }
-        $('input[name="rrze_qr_foreground"], input[name="rrze_qr_background"]').on(
-            'change',
-            rrzeQrUpdateSettingsPreview
-        );
-        rrzeQrUpdateSettingsPreview();
+        $link.attr({ 'aria-disabled': 'true', 'aria-busy': 'true' });
+        status($status, 'Generating QR code…');
+        try {
+            const data = await request({ action: 'rrze_qr_get_permalink', post_id: $link.data('id') });
+            const qr = createQr(QRious, Object.assign({ value: data.url, size: 300 }, colorOptions(data.colors)));
+            const download = $('<a>').attr({ href: qr.toDataURL(), download: 'qr-code-' + $link.data('id') + '.png' });
+            $link.after(download);
+            download[0].click();
+            download.remove();
+            status($status, 'QR code download started.');
+        } catch (error) {
+            status($status, error.message);
+        } finally {
+            $link.removeAttr('aria-disabled aria-busy');
+        }
+    });
+
+    const $form = $('#rrze-qr-form');
+    const $submit = $form.find('button[type="submit"]');
+    const $status = $('#rrze-qr-status');
+    let generation = 0;
+    function hideResult() {
+        $('#rrze-qr-download, #rrze-qr-canvas').addClass('rrze-qr--hidden');
+        $('#rrze-qr-download').removeAttr('href');
+    }
+    $('#rrze-qr-url').on('input', function () {
+        generation++;
+        hideResult();
+        $submit.prop('disabled', false);
+        $form.removeAttr('aria-busy');
+        status($status, '');
+    });
+    $form.on('submit', async function (event) {
+        event.preventDefault();
+        const current = ++generation;
+        hideResult();
+        $submit.prop('disabled', true);
+        $form.attr('aria-busy', 'true');
+        status($status, 'Generating QR code…');
+        try {
+            const url = normalizeUrl($('#rrze-qr-url').val());
+            const colors = await request({ action: 'rrze_qr_get_colors' });
+            if (current !== generation) { return; }
+            const qr = createQr(QRious, Object.assign({ value: url, size: 300, element: $('#rrze-qr-canvas')[0] }, colorOptions(colors)));
+            $('#rrze-qr-canvas').removeClass('rrze-qr--hidden');
+            $('#rrze-qr-download').attr('href', qr.toDataURL()).removeClass('rrze-qr--hidden');
+            status($status, 'QR code is ready.');
+        } catch (error) {
+            if (current === generation) { status($status, error.message); }
+        } finally {
+            if (current === generation) {
+                $submit.prop('disabled', false);
+                $form.removeAttr('aria-busy');
+            }
+        }
+    });
+
+    const $preview = $('#rrze-qr-settings-preview');
+    $('#rrze-qr-preview-surface').on('change', function () {
+        $preview.css('background', this.value === 'checkerboard' ? '' : this.value);
+    });
+    let previewGeneration = 0;
+    async function updatePreview() {
+        const current = ++previewGeneration;
+        const $previewStatus = $('#rrze-qr-preview-status');
+        $preview.addClass('rrze-qr--hidden');
+        status($previewStatus, 'Updating preview…');
+        try {
+            const colors = await request({
+                action: 'rrze_qr_resolve_colors',
+                foreground: $('input[name="rrze_qr_foreground"]:checked').val(),
+                background: $('input[name="rrze_qr_background"]:checked').val()
+            });
+            if (current !== previewGeneration) { return; }
+            createQr(QRious, Object.assign({ element: $preview[0], value: rrzeQr.previewSampleUrl, size: 180 }, colorOptions(colors)));
+            $preview.removeClass('rrze-qr--hidden');
+            status($previewStatus, 'Preview updated.');
+        } catch (error) {
+            if (current === previewGeneration) { status($previewStatus, error.message); }
+        }
+    }
+    if ($preview.length) {
+        $('input[name="rrze_qr_foreground"], input[name="rrze_qr_background"]').on('change', updatePreview);
+        updatePreview();
     }
 });

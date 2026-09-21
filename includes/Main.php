@@ -270,6 +270,7 @@ class Main
                 <input type="url" id="rrze-qr-url" name="rrze-qr-url" required>
                 <button type="submit" class="button button-primary">Generate QR Code</button>
             </form>
+            <p id="rrze-qr-status" role="status" aria-live="polite"></p>
             <canvas id="rrze-qr-canvas" class="rrze-qr-canvas rrze-qr--hidden" width="300" height="300"></canvas>
             <a id="rrze-qr-download" class="button button-primary rrze-qr-download-link rrze-qr--hidden" download="qr-code.png" href="#">Download QR Code</a>
         </div>
@@ -348,6 +349,7 @@ class Main
                         <option value="black">Black</option>
                     </select>
                     <canvas id="rrze-qr-settings-preview" class="rrze-qr-settings__preview-canvas" width="180" height="180" role="img" aria-label="QR code preview for this site" aria-describedby="rrze-qr-preview-help"></canvas>
+                    <p id="rrze-qr-preview-status" role="status" aria-live="polite"></p>
                 </div>
                 <?php submit_button(); ?>
             </form>
@@ -372,7 +374,7 @@ class Main
         $permalink = get_permalink($post_id);
 
         if ($permalink) {
-            wp_send_json_success($permalink);
+            wp_send_json_success(['url' => $permalink, 'colors' => $this->rrze_qr_colors_for_qrious()]);
         } else {
             wp_send_json_error(__('Could not retrieve permalink.', 'rrze-qr'), 404);
         }
