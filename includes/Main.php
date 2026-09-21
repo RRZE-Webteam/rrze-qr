@@ -127,44 +127,43 @@ class Main
     }
 
     /**
-     * @return string[]
+     * Accept opaque hex colors and the original preset tokens.
      */
-    private function rrze_qr_foreground_allowed()
+    private function rrze_qr_normalize_color($value, $allow_transparent = false)
     {
-        return ['white', 'black', 'fau'];
+        if (!is_string($value)) {
+            return null;
+        }
+        $value = strtolower(trim($value));
+        if ($allow_transparent && $value === 'transparent') {
+            return $value;
+        }
+        $legacy = ['white' => '#ffffff', 'black' => '#000000', 'fau' => '#003366'];
+        if (isset($legacy[$value])) {
+            return $legacy[$value];
+        }
+        if (!preg_match('/\A#(?:[0-9a-f]{3}|[0-9a-f]{6})\z/', $value)) {
+            return null;
+        }
+        if (strlen($value) === 4) {
+            return '#' . $value[1] . $value[1] . $value[2] . $value[2] . $value[3] . $value[3];
+        }
+        return $value;
     }
 
-    /**
-     * @return string[]
-     */
-    private function rrze_qr_background_allowed()
-    {
-        return ['white', 'black', 'fau', 'transparent'];
-    }
-
-    /**
-     * @param mixed $value Raw option value from the form/API.
-     */
     public function rrze_qr_sanitize_foreground($value)
     {
-        $value = is_string($value) ? strtolower(trim($value)) : '';
-        return in_array($value, $this->rrze_qr_foreground_allowed(), true) ? $value : 'black';
+        return $this->rrze_qr_normalize_color($value) ?? '#000000';
     }
 
-    /**
-     * @param mixed $value Raw option value from the form/API.
-     */
     public function rrze_qr_sanitize_background($value)
     {
-        $value = is_string($value) ? strtolower(trim($value)) : '';
-        return in_array($value, $this->rrze_qr_background_allowed(), true) ? $value : 'white';
+        return $this->rrze_qr_normalize_color($value, true) ?? '#ffffff';
     }
 
     private function rrze_qr_valid_color_pair(array $tokens)
     {
-        return $tokens['background'] === 'transparent'
-            || ($tokens['foreground'] !== $tokens['background']
-                && in_array('white', $tokens, true));
+        return $tokens['foreground'] !== $tokens['background'];
     }
 
     /**
@@ -219,7 +218,7 @@ class Main
             'background' => $this->rrze_qr_sanitize_background($stored['background'] ?? get_option('rrze_qr_background', 'white')),
         ];
         if (!$this->rrze_qr_valid_color_pair($tokens)) {
-            $tokens = ['foreground' => 'black', 'background' => 'white'];
+            $tokens = ['foreground' => '#000000', 'background' => '#ffffff'];
         }
         $tokens['size'] = in_array($stored['size'] ?? null, [300, 600, 1200], true) ? $stored['size'] : 300;
         return $tokens;
@@ -231,17 +230,16 @@ class Main
         if (!current_user_can('manage_options')) {
             wp_send_json_error(__('Only administrators can save site defaults.', 'rrze-qr'), 403);
         }
-        $fg = isset($_POST['foreground']) ? wp_unslash($_POST['foreground']) : null;
-        $bg = isset($_POST['background']) ? wp_unslash($_POST['background']) : null;
+        $fg = $this->rrze_qr_normalize_color(isset($_POST['foreground']) ? wp_unslash($_POST['foreground']) : null);
+        $bg = $this->rrze_qr_normalize_color(isset($_POST['background']) ? wp_unslash($_POST['background']) : null, true);
         $size = $_POST['size'] ?? null;
-        if (!in_array($fg, $this->rrze_qr_foreground_allowed(), true)
-            || !in_array($bg, $this->rrze_qr_background_allowed(), true)
+        if ($fg === null || $bg === null
             || !in_array($size, ['300', '600', '1200'], true)) {
             wp_send_json_error(__('Choose valid colors and an export size.', 'rrze-qr'), 400);
         }
         $defaults = ['foreground' => $fg, 'background' => $bg, 'size' => (int) $size];
         if (!$this->rrze_qr_valid_color_pair(['foreground' => $fg, 'background' => $bg])) {
-            wp_send_json_error(__('Choose contrasting foreground and background colors.', 'rrze-qr'), 400);
+            wp_send_json_error(__('Foreground and background must be different colors.', 'rrze-qr'), 400);
         }
         update_option('rrze_qr_defaults', $defaults);
         if (get_option('rrze_qr_defaults') !== $defaults) {
@@ -258,26 +256,10 @@ class Main
      */
     private function rrze_qr_colors_for_qrious_from_tokens(array $tokens)
     {
-        $css = [
-            'white' => 'white',
-            'black' => 'black',
-            'fau' => '#036',
-        ];
-
-        $foreground = $css[$tokens['foreground']];
-
-        if ($tokens['background'] === 'transparent') {
-            return [
-                'foreground' => $foreground,
-                'background' => 'white',
-                'backgroundAlpha' => 0,
-            ];
-        }
-
         return [
-            'foreground' => $foreground,
-            'background' => $css[$tokens['background']],
-            'backgroundAlpha' => 1,
+            'foreground' => $tokens['foreground'],
+            'background' => $tokens['background'] === 'transparent' ? '#ffffff' : $tokens['background'],
+            'backgroundAlpha' => $tokens['background'] === 'transparent' ? 0 : 1,
         ];
     }
 

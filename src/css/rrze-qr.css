@@ -39,6 +39,27 @@
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 16px;
+    margin-bottom: 24px;
+}
+
+.rrze-qr-color-field {
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+.rrze-qr-color-field legend {
+    margin-bottom: 12px;
+    padding: 0;
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+}
+
+.rrze-qr-color-field .components-toggle-control {
+    margin-top: 16px;
+    margin-bottom: 0;
 }
 
 .rrze-qr-defaults {
@@ -120,7 +141,7 @@
 @media (max-width: 480px) {
     .rrze-qr-color-fields {
         grid-template-columns: minmax(0, 1fr);
-        gap: 0;
+        gap: 24px;
     }
 
     .rrze-qr-layout .components-card__body {

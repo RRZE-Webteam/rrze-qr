@@ -2,6 +2,7 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const decode = require('jsqr');
 const { createQr, normalizeUrl } = require('../src/js/qr-code');
+const { resolveColors } = require('../src/js/qr-settings');
 
 // Rasterize the real bundled encoder's canvas calls for independent decoding.
 class Canvas {
@@ -11,11 +12,12 @@ class Canvas {
             fillStyle: 'white',
             clearRect() { canvas.pixels = new Uint8ClampedArray(canvas.width * canvas.height * 4); },
             fillRect(x, y, width, height) {
-                const shade = this.fillStyle === 'black' ? 0 : 255;
+                const color = { black: '#000000', white: '#ffffff' }[this.fillStyle] || this.fillStyle;
+                const channels = color.slice(1).match(/../g).map(channel => parseInt(channel, 16));
                 for (let row = y; row < y + height; row++) {
                     for (let col = x; col < x + width; col++) {
                         const offset = (row * canvas.width + col) * 4;
-                        canvas.pixels.set([shade, shade, shade, 255], offset);
+                        canvas.pixels.set([...channels, 255], offset);
                     }
                 }
             }
@@ -73,4 +75,20 @@ test('exports four-module quiet zones and decodable images at version transition
         }
         assert.equal(decode(pixels, width, height)?.data, value);
     }
+});
+
+
+test('renders custom foreground and background colors into a decodable QR code', () => {
+    const value = 'https://example.com/custom-colors';
+    const qr = createQr(QRious, { value, size: 300, ...resolveColors('#123456', '#fedcba') });
+    const { pixels, width, height } = qr.canvas;
+    assert.deepEqual([...pixels.slice(0, 4)], [254, 220, 186, 255]);
+    const foregroundPixels = [];
+    for (let offset = 0; offset < pixels.length; offset += 4) {
+        if (pixels[offset] === 18 && pixels[offset + 1] === 52 && pixels[offset + 2] === 86) {
+            foregroundPixels.push(offset);
+        }
+    }
+    assert.ok(foregroundPixels.length > 0, 'Custom foreground must be rendered');
+    assert.equal(decode(pixels, width, height)?.data, value);
 });

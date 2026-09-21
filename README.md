@@ -15,8 +15,9 @@ are generated locally in the browser; no external QR service receives the URL.
 Authors, editors, administrators, and custom roles with permission to edit posts
 or pages can use the workspace. Enter an HTTP or HTTPS destination URL and adjust:
 
-- Foreground: black, white, or FAU blue
-- Background: black, white, FAU blue, or transparent
+- Foreground and background: black, white, and FAU blue presets, plus a custom
+  color picker for each
+- Transparent background: a separate toggle that remembers the last solid color
 - Export size: approximately 300, 600, or 1200 pixels
 
 The preview updates automatically. **Download PNG** exports the current code.
@@ -44,10 +45,11 @@ check its HTTP status, or guarantee that its destination is reachable.
 International domain names and paths are normalized to an ASCII URL. URLs longer
 than 2,953 encoded characters are rejected.
 
-Solid color pairs must contrast: one must be white and the other black or FAU
-blue. Invalid pairs cannot be downloaded or saved. Transparent codes need a
-contrasting surface; test transparent or inverted codes with the intended scanner
-and background before publishing or printing.
+Identical foreground and background colors cannot be downloaded or saved. Other
+custom colors are allowed, with a warning for low contrast. Choose a dark foreground
+on a light background for reliable scanning. Transparent codes need a contrasting
+surface; test codes with the intended scanner and background before publishing or
+printing. Contrast hints do not guarantee that a code will scan.
 
 PNG exports use error correction level L and include a four-module quiet zone.
 Dimensions adapt to the QR version so each module occupies whole pixels, with at

@@ -93,7 +93,7 @@ $original = ['foreground' => 'fau', 'background' => 'white', 'size' => 600];
 $GLOBALS['options']['rrze_qr_defaults'] = $original;
 foreach (['white', 'black', 'fau'] as $fg) {
     foreach (['white', 'black', 'fau', 'transparent'] as $bg) {
-        $valid = $bg === 'transparent' || ($fg !== $bg && ($fg === 'white' || $bg === 'white'));
+        $valid = $fg !== $bg;
         $before = $GLOBALS['options']['rrze_qr_defaults'];
         $response = save_defaults($main, ['foreground' => $fg, 'background' => $bg, 'size' => '600']);
         check($response->success === $valid, "Unexpected color validation: $fg/$bg");
@@ -103,6 +103,25 @@ foreach (['white', 'black', 'fau'] as $fg) {
 foreach ([[], ['foreground' => ['black'], 'background' => 'white', 'size' => '300'], ['foreground' => 'red', 'background' => 'white', 'size' => '300'], ['foreground' => 'black', 'background' => 'white', 'size' => '99999']] as $invalid) {
     check(save_defaults($main, $invalid)->status === 400, 'Malformed defaults must be rejected');
 }
+$response = save_defaults($main, ['foreground' => ' #A1b ', 'background' => '#FEDcBa', 'size' => '600']);
+$custom = ['foreground' => '#aa11bb', 'background' => '#fedcba', 'size' => 600];
+check($response->success && $response->data === $custom, 'Custom colors must be normalized and returned');
+check($GLOBALS['options']['rrze_qr_defaults'] === $custom, 'Custom defaults must be persisted');
+check(request($main, '42')->data['colors'] === ['foreground' => '#aa11bb', 'background' => '#fedcba', 'backgroundAlpha' => 1], 'Post downloads must use custom defaults');
+$main->rrze_qr_enqueue_scripts('toplevel_page_rrze-qr');
+check($GLOBALS['localized']['rrzeQrAdmin']['defaults'] === $custom, 'Workspace must restore custom defaults');
+foreach (['#12', '#gggggg', '#0008', '#00000080', 'url(x)', 'rgb(0,0,0)', ['#123456']] as $invalid) {
+    foreach (['foreground', 'background'] as $field) {
+        $input = ['foreground' => '#123456', 'background' => '#ffffff', 'size' => '300'];
+        $input[$field] = $invalid;
+        check(save_defaults($main, $input)->status === 400, 'Invalid custom colors must be rejected');
+        check($GLOBALS['options']['rrze_qr_defaults'] === $custom, 'Invalid custom colors must leave defaults unchanged');
+    }
+}
+check(save_defaults($main, ['foreground' => '#fff', 'background' => 'white', 'size' => '300'])->status === 400, 'Equivalent colors must be rejected after normalization');
+check(save_defaults($main, ['foreground' => 'transparent', 'background' => '#fff', 'size' => '300'])->status === 400, 'Foreground must be opaque');
+check(save_defaults($main, ['foreground' => '#123456', 'background' => 'transparent', 'size' => '300'])->success, 'Custom foreground supports transparency');
+check(request($main, '42')->data['colors'] === ['foreground' => '#123456', 'background' => '#ffffff', 'backgroundAlpha' => 0], 'Post downloads must preserve transparency');
 $GLOBALS['caps'] = ['edit_posts' => true];
 check(save_defaults($main, ['foreground' => 'black', 'background' => 'white', 'size' => '300'])->status === 403, 'Editors must not save site defaults');
 $GLOBALS['caps'] = ['manage_options' => true];
@@ -155,5 +174,5 @@ unset($GLOBALS['options']['rrze_qr_defaults']);
 $GLOBALS['options']['rrze_qr_foreground'] = 'fau';
 $GLOBALS['options']['rrze_qr_background'] = 'white';
 $main->rrze_qr_enqueue_scripts('toplevel_page_rrze-qr');
-check($GLOBALS['localized']['rrzeQrAdmin']['defaults'] === ['foreground' => 'fau', 'background' => 'white', 'size' => 300], 'Existing site color defaults must survive the upgrade');
+check($GLOBALS['localized']['rrzeQrAdmin']['defaults'] === ['foreground' => '#003366', 'background' => '#ffffff', 'size' => 300], 'Existing site color defaults must survive the upgrade');
 echo "PHP asset and migration checks passed.\n";
