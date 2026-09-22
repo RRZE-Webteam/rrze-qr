@@ -4,9 +4,12 @@ import { createElement, createRoot, useEffect, useMemo, useState } from '@wordpr
 import { Button, Card, CardBody, ColorPalette, Notice, Popover, SelectControl, SlotFillProvider, TextControl, ToggleControl } from '@wordpress/components';
 import { __, sprintf } from '@wordpress/i18n';
 import { createQr, normalizeUrl } from './qr-code';
-import { colorContrast, normalizeColor, resolveColors } from './qr-settings';
+import { MIN_SIZE, MAX_SIZE, colorContrast, normalizeColor, normalizeSize, resolveColors } from './qr-settings';
+
+const presetSizes = [300, 600, 1200];
 
 function errorMessage(error) {
+    if (error.code === 'invalidSize') { return __('Enter a whole number between 128 and 4096 pixels.', 'rrze-qr'); }
     if (error.code === 'invalidUrl') { return __('Enter a valid HTTP or HTTPS URL.', 'rrze-qr'); }
     if (error.code === 'tooLong') { return __('This URL is too long for a QR code. Use a shorter URL (maximum 2,953 encoded characters).', 'rrze-qr'); }
     if (error.code === 'contrast') { return __('Foreground and background must be different colors.', 'rrze-qr'); }
@@ -23,6 +26,7 @@ function Workspace({ config }) {
     const [url, setUrl] = useState(config.initialUrl);
     const [defaults, setDefaults] = useState(config.defaults);
     const [settings, setSettings] = useState(config.defaults);
+    const [customSize, setCustomSize] = useState(!presetSizes.includes(config.defaults.size));
     const [solidBackground, setSolidBackground] = useState(config.defaults.background === 'transparent' ? '#ffffff' : config.defaults.background);
     const [surface, setSurface] = useState('checkerboard');
     const [image, setImage] = useState(null);
@@ -30,11 +34,13 @@ function Workspace({ config }) {
     const [saving, setSaving] = useState(false);
     const [saveNotice, setSaveNotice] = useState(null);
     const { foreground, background, size } = settings;
+    const exportSize = normalizeSize(size);
+    const sizeError = exportSize === null ? errorMessage({ code: 'invalidSize' }) : null;
     const sourceMatches = config.context && url.trim() === config.context.url;
     /* translators: %s: post or page title. */
     const sourceTitle = sourceMatches ? sprintf(__('QR code for %s', 'rrze-qr'), config.context.title) : null;
     const key = JSON.stringify([url, foreground, background, size]);
-    const dirty = foreground !== defaults.foreground || background !== defaults.background || size !== defaults.size;
+    const dirty = foreground !== defaults.foreground || background !== defaults.background || exportSize !== defaults.size;
     const colors = useMemo(() => {
         try { return { value: resolveColors(foreground, background) }; }
         catch (error) { return { error: errorMessage(error) }; }
@@ -47,10 +53,10 @@ function Workspace({ config }) {
     }, [url]);
 
     useEffect(() => {
-        if (!input.value || !colors.value) { return; }
+        if (!input.value || !colors.value || exportSize === null) { return; }
         const timer = setTimeout(() => {
             try {
-                const qr = createQr(QRious, { value: input.value, size, ...colors.value });
+                const qr = createQr(QRious, { value: input.value, size: exportSize, ...colors.value });
                 setImage({ key, src: qr.toDataURL(), width: qr.size });
                 setGenerationError(null);
             } catch (error) {
@@ -58,10 +64,10 @@ function Workspace({ config }) {
             }
         }, 150);
         return () => clearTimeout(timer);
-    }, [key, input, colors, size]);
+    }, [key, input, colors, exportSize]);
 
     const currentImage = image?.key === key ? image : null;
-    const error = input.error || colors.error || (generationError?.key === key ? generationError.message : null);
+    const error = input.error || colors.error || sizeError || (generationError?.key === key ? generationError.message : null);
     function changeSetting(name, value) {
         if (saving) { return; }
         setSettings(current => ({ ...current, [name]: value }));
@@ -74,7 +80,7 @@ function Workspace({ config }) {
         changeSetting(name, color);
     }
     async function saveDefaults() {
-        if (saving || colors.error || !config.canSaveDefaults) { return; }
+        if (saving || colors.error || sizeError || !config.canSaveDefaults) { return; }
         setSaving(true);
         setSaveNotice(null);
         const controller = new AbortController();
@@ -121,6 +127,13 @@ function Workspace({ config }) {
                         placeholder="https://example.com/" autoComplete="off" spellCheck={false}
                         help={__('Enter an HTTP or HTTPS URL. The preview updates automatically.', 'rrze-qr')}
                     />
+                    <div className="rrze-qr-url-actions">
+                        <Button variant="secondary" href={input.value || undefined} disabled={!input.value}
+                            target="_blank" rel="noopener noreferrer"
+                            aria-label={__('Test URL (opens in a new tab)', 'rrze-qr')}>
+                            {__('Test URL', 'rrze-qr')}
+                        </Button>
+                    </div>
                     <div className="rrze-qr-color-fields">
                         <fieldset className="rrze-qr-color-field" disabled={saving}>
                             <legend>{__('Foreground', 'rrze-qr')}</legend>
@@ -137,20 +150,32 @@ function Workspace({ config }) {
                         </fieldset>
                     </div>
                     <SelectControl
-                        label={__('Export size', 'rrze-qr')} value={String(size)} disabled={saving}
+                        label={__('Export size', 'rrze-qr')} value={customSize ? 'custom' : String(size)} disabled={saving}
                         options={[
                             { label: __('Small — approximately 300 px', 'rrze-qr'), value: '300' },
                             { label: __('Medium — approximately 600 px', 'rrze-qr'), value: '600' },
-                            { label: __('Large — approximately 1200 px', 'rrze-qr'), value: '1200' }
+                            { label: __('Large — approximately 1200 px', 'rrze-qr'), value: '1200' },
+                            { label: __('Custom size', 'rrze-qr'), value: 'custom' }
                         ]}
-                        onChange={value => changeSetting('size', Number(value))}
-                        help={__('The exact dimensions adapt to keep the QR pattern sharp and include a clear margin.', 'rrze-qr')}
+                        onChange={value => {
+                            if (saving) { return; }
+                            setCustomSize(value === 'custom');
+                            if (value !== 'custom') { changeSetting('size', Number(value)); }
+                        }}
+                        help={__('Dense QR codes may need a larger image to remain readable. The preview shows the final dimensions.', 'rrze-qr')}
                     />
+                    {customSize && <TextControl
+                        label={__('Side length in pixels', 'rrze-qr')}
+                        type="number" min={MIN_SIZE} max={MAX_SIZE} step={1}
+                        value={String(size)} disabled={saving} aria-invalid={Boolean(sizeError)}
+                        onChange={value => changeSetting('size', value)}
+                        help={__('Width and height are identical. Enter a whole number from 128 to 4096.', 'rrze-qr')}
+                    />}
                     <div className="rrze-qr-defaults">
                         <p>{__('These controls change your current download. Site defaults are saved separately.', 'rrze-qr')}</p>
                         <div className="rrze-qr-actions">
-                            <Button variant="secondary" disabled={!dirty || saving} onClick={() => { setSettings(defaults); setSolidBackground(defaults.background === 'transparent' ? '#ffffff' : defaults.background); setSaveNotice(null); }}>{__('Reset to defaults', 'rrze-qr')}</Button>
-                            {config.canSaveDefaults && <Button variant="secondary" disabled={!dirty || Boolean(colors.error) || saving} isBusy={saving} onClick={saveDefaults}>{saving ? __('Saving…', 'rrze-qr') : __('Save as defaults', 'rrze-qr')}</Button>}
+                            <Button variant="secondary" disabled={!dirty || saving} onClick={() => { setSettings(defaults); setCustomSize(!presetSizes.includes(defaults.size)); setSolidBackground(defaults.background === 'transparent' ? '#ffffff' : defaults.background); setSaveNotice(null); }}>{__('Reset to defaults', 'rrze-qr')}</Button>
+                            {config.canSaveDefaults && <Button variant="secondary" disabled={!dirty || Boolean(colors.error || sizeError) || saving} isBusy={saving} onClick={saveDefaults}>{saving ? __('Saving…', 'rrze-qr') : __('Save as defaults', 'rrze-qr')}</Button>}
                         </div>
                         {saveNotice && <Notice status={saveNotice.status} isDismissible={false}>{saveNotice.text}</Notice>}
                     </div>

@@ -1,6 +1,6 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { normalizeColor, resolveColors, colorContrast } = require('../src/js/qr-settings');
+const { normalizeColor, resolveColors, colorContrast, normalizeSize } = require('../src/js/qr-settings');
 
 test('preserves legacy presets and allows custom opaque hex colors', () => {
     for (const foreground of ['white', 'black', 'fau']) {
@@ -41,4 +41,14 @@ test('contrast hints distinguish low contrast, inverted colors, and transparency
     assert.ok(colorContrast(resolveColors('#eee', '#fff')).ratio < 3);
     assert.ok(colorContrast(resolveColors('#123456', '#fedcba')).ratio > 3);
     assert.equal(colorContrast(resolveColors('#123456', 'transparent')), null);
+});
+
+
+test('accepts bounded custom square sizes and rejects malformed input', () => {
+    for (const value of [128, 300, 512, 1024, 4096, '128', '0750', '4096']) {
+        assert.equal(normalizeSize(value), Number(value));
+    }
+    for (const value of [undefined, null, '', ' ', [], {}, true, false, 0, -1, 127, 4097, 256.5, '256.5', '1e3', '512px', ' 512', Infinity, NaN]) {
+        assert.equal(normalizeSize(value), null);
+    }
 });

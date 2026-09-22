@@ -242,6 +242,14 @@ class Main
         update_option('rrze_qr_color_legacy_migrated', '1');
     }
 
+    private function rrze_qr_normalize_size($value)
+    {
+        if (!is_int($value) && (!is_string($value) || !preg_match('/\A[0-9]+\z/', $value))) {
+            return null;
+        }
+        return $value >= 128 && $value <= 4096 ? (int) $value : null;
+    }
+
     /**
      * Liest gespeicherte Modus-Farben (mit Fallback nach Migration).
      *
@@ -258,7 +266,7 @@ class Main
         if (!$this->rrze_qr_valid_color_pair($tokens)) {
             $tokens = ['foreground' => '#000000', 'background' => '#ffffff'];
         }
-        $tokens['size'] = in_array($stored['size'] ?? null, [300, 600, 1200], true) ? $stored['size'] : 300;
+        $tokens['size'] = $this->rrze_qr_normalize_size($stored['size'] ?? null) ?? 300;
         return $tokens;
     }
 
@@ -270,9 +278,11 @@ class Main
         }
         $fg = $this->rrze_qr_normalize_color(isset($_POST['foreground']) ? wp_unslash($_POST['foreground']) : null);
         $bg = $this->rrze_qr_normalize_color(isset($_POST['background']) ? wp_unslash($_POST['background']) : null, true);
-        $size = $_POST['size'] ?? null;
-        if ($fg === null || $bg === null
-            || !in_array($size, ['300', '600', '1200'], true)) {
+        $size = $this->rrze_qr_normalize_size($_POST['size'] ?? null);
+        if ($size === null) {
+            wp_send_json_error(__('Enter a whole number between 128 and 4096 pixels.', 'rrze-qr'), 400);
+        }
+        if ($fg === null || $bg === null) {
             wp_send_json_error(__('Choose valid colors and an export size.', 'rrze-qr'), 400);
         }
         $defaults = ['foreground' => $fg, 'background' => $bg, 'size' => (int) $size];

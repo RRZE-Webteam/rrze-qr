@@ -92,3 +92,28 @@ test('renders custom foreground and background colors into a decodable QR code',
     assert.ok(foregroundPixels.length > 0, 'Custom foreground must be rendered');
     assert.equal(decode(pixels, width, height)?.data, value);
 });
+
+
+test('custom sizes keep exact square dimensions and remain decodable', () => {
+    const value = 'https://example.com/custom-size';
+    for (const size of [128, 257, 512, 777, 1024]) {
+        const qr = createQr(QRious, { value, size });
+        assert.equal(qr.canvas.width, size);
+        assert.equal(qr.canvas.height, size);
+        assert.equal(decode(qr.canvas.pixels, size, size)?.data, value);
+    }
+});
+
+test('dense codes grow only as needed and invalid dimensions never reach the renderer', () => {
+    const value = 'https://example.com/' + 'a'.repeat(2800);
+    const qr = createQr(QRious, { value, size: 128 });
+    assert.ok(qr.size > 128);
+    assert.equal(qr.canvas.width, qr.canvas.height);
+    assert.equal(decode(qr.canvas.pixels, qr.size, qr.size)?.data, value);
+    for (const size of [0, 127, 4097, 500.5, '', '1e3', null]) {
+        assert.throws(() => createQr(QRious, { value, size }), { code: 'invalidSize' });
+    }
+    // The largest allowed canvas need not be rasterized just to check its bounds.
+    const options = createQr(function (config) { Object.assign(this, config); }, { value, size: 4096 });
+    assert.equal(options.size, 4096);
+});

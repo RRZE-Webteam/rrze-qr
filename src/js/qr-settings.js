@@ -1,3 +1,12 @@
+const MIN_SIZE = 128;
+const MAX_SIZE = 4096;
+
+function normalizeSize(value) {
+    if (typeof value !== 'number' && (typeof value !== 'string' || !/^[0-9]+$/.test(value))) { return null; }
+    const size = Number(value);
+    return Number.isInteger(size) && size >= MIN_SIZE && size <= MAX_SIZE ? size : null;
+}
+
 const legacyColors = { white: '#ffffff', black: '#000000', fau: '#04316a' };
 
 function normalizeColor(value) {
@@ -45,4 +54,4 @@ function colorContrast(colors) {
     };
 }
 
-module.exports = { normalizeColor, resolveColors, colorContrast };
+module.exports = { MIN_SIZE, MAX_SIZE, normalizeSize, normalizeColor, resolveColors, colorContrast };

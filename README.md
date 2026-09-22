@@ -18,7 +18,11 @@ or pages can use the workspace. Enter an HTTP or HTTPS destination URL and adjus
 - Foreground and background: black, white, and FAU blue presets, plus a custom
   color picker for each
 - Transparent background: a separate toggle that remembers the last solid color
-- Export size: approximately 300, 600, or 1200 pixels
+- Export size: 300, 600, or 1200 pixels, or a custom square side length from
+  128 to 4096 pixels (whole numbers)
+
+**Test URL** opens the normalized destination in a new tab. It is disabled for
+empty, invalid, or unsupported URLs. It does not check the destination in advance.
 
 The preview updates automatically. **Download PNG** exports the current code.
 A transparent preview has a background selector; this affects the preview only,
@@ -60,8 +64,10 @@ surface; test codes with the intended scanner and background before publishing o
 printing. Contrast hints do not guarantee that a code will scan.
 
 PNG exports use error correction level L and include a four-module quiet zone.
-Dimensions adapt to the QR version so each module occupies whole pixels, with at
-least two pixels per module. Dense codes can exceed the smallest requested size.
+The exported image keeps the requested square dimensions, with unused pixels
+added to the margin so QR modules remain sharp. Modules occupy at least two pixels;
+if the code cannot fit, the image grows to its minimum readable size. The preview
+shows the final dimensions. Custom sizes can also be saved as site defaults.
 
 ## Development
 

@@ -4,7 +4,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: RRZE QR 1.1.0\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/rrze-qr\n"
-"POT-Creation-Date: 2026-09-22T05:39:47+00:00\n"
+"POT-Creation-Date: 2026-09-22T05:44:43+00:00\n"
 "PO-Revision-Date: 2026-09-21 14:00+0200\n"
 "Last-Translator: RRZE Webteam\n"
 "Language-Team: German\n"
@@ -91,19 +91,23 @@ msgstr "Einen QR-Code erstellen, sein Aussehen anpassen und als PNG herunterlade
 msgid "Enable JavaScript to use the QR code generator."
 msgstr "Bitte JavaScript aktivieren, um den QR-Code-Generator zu verwenden."
 
-#: includes/Main.php:269
+#: includes/Main.php:277
 msgid "Only administrators can save site defaults."
 msgstr "Nur Administratoren können die Website-Standardeinstellungen speichern."
 
-#: includes/Main.php:276
+#: includes/Main.php:283 src/js/admin.js:12
+msgid "Enter a whole number between 128 and 4096 pixels."
+msgstr "Bitte eine ganze Zahl zwischen 128 und 4096 Pixeln eingeben."
+
+#: includes/Main.php:286
 msgid "Choose valid colors and an export size."
 msgstr "Bitte gültige Farben und eine Exportgröße wählen."
 
-#: includes/Main.php:280 src/js/admin.js:12
+#: includes/Main.php:290 src/js/admin.js:15
 msgid "Foreground and background must be different colors."
 msgstr "Vordergrund und Hintergrund müssen unterschiedliche Farben haben."
 
-#: includes/Main.php:284
+#: includes/Main.php:294
 msgid "The defaults could not be saved. Please try again."
 msgstr "Die Standardeinstellungen konnten nicht gespeichert werden. Bitte erneut versuchen."
 
@@ -119,152 +123,172 @@ msgstr "Auf dem Server läuft PHP-Version %1$s. Das Plugin benötigt mindestens 
 msgid "The server is running WordPress version %1$s. The Plugin requires at least WordPress version %2$s."
 msgstr "Auf dem Server läuft WordPress-Version %1$s. Das Plugin benötigt mindestens WordPress-Version %2$s."
 
-#: src/js/admin.js:10
+#: src/js/admin.js:13
 msgid "Enter a valid HTTP or HTTPS URL."
 msgstr "Bitte eine gültige HTTP- oder HTTPS-URL eingeben."
 
-#: src/js/admin.js:11
+#: src/js/admin.js:14
 msgid "This URL is too long for a QR code. Use a shorter URL (maximum 2,953 encoded characters)."
 msgstr "Diese URL ist zu lang für einen QR-Code. Bitte eine kürzere URL verwenden (höchstens 2.953 kodierte Zeichen)."
 
-#: src/js/admin.js:13
+#: src/js/admin.js:16
 msgid "Choose a valid foreground and background color."
 msgstr "Bitte eine gültige Vorder- und Hintergrundfarbe wählen."
 
-#: src/js/admin.js:14
+#: src/js/admin.js:17
 msgid "The QR code could not be generated. Reload the page and try again."
 msgstr "Der QR-Code konnte nicht generiert werden. Bitte die Seite neu laden und erneut versuchen."
 
 #. translators: %1$d: width and height of the square image in pixels.
-#: src/js/admin.js:19
+#: src/js/admin.js:22
 msgid "PNG · %1$d × %1$d px"
 msgstr "PNG · %1$d × %1$d px"
 
 #. translators: %s: post or page title.
-#: src/js/admin.js:35
+#: src/js/admin.js:41
 msgid "QR code for %s"
 msgstr "QR-Code für %s"
 
-#: src/js/admin.js:91 src/js/admin.js:97
+#: src/js/admin.js:97 src/js/admin.js:103
 msgid "The defaults could not be saved. Reload the page and try again."
 msgstr "Die Standardeinstellungen konnten nicht gespeichert werden. Bitte die Seite neu laden und erneut versuchen."
 
-#: src/js/admin.js:95
+#: src/js/admin.js:101
 msgid "Site defaults saved. New QR codes will use these settings."
 msgstr "Website-Standardeinstellungen gespeichert. Neue QR-Codes verwenden diese Einstellungen."
 
-#: src/js/admin.js:104 src/js/admin.js:170
+#: src/js/admin.js:110 src/js/admin.js:195
 msgid "Black"
 msgstr "Schwarz"
 
-#: src/js/admin.js:105 src/js/admin.js:170
+#: src/js/admin.js:111 src/js/admin.js:195
 msgid "White"
 msgstr "Weiß"
 
-#: src/js/admin.js:106
+#: src/js/admin.js:112
 msgid "FAU Blue"
 msgstr "FAU-Blau"
 
-#: src/js/admin.js:117
+#: src/js/admin.js:123
 msgid "Configure your QR code"
 msgstr "QR-Code konfigurieren"
 
-#: src/js/admin.js:119
+#: src/js/admin.js:125
 msgid "Destination URL"
 msgstr "Ziel-URL"
 
-#: src/js/admin.js:122
+#: src/js/admin.js:128
 msgid "Enter an HTTP or HTTPS URL. The preview updates automatically."
 msgstr "Eine HTTP- oder HTTPS-URL eingeben. Die Vorschau wird automatisch aktualisiert."
 
-#: src/js/admin.js:126 src/js/admin.js:127
+#: src/js/admin.js:133
+msgid "Test URL (opens in a new tab)"
+msgstr "URL testen (öffnet einen neuen Tab)"
+
+#: src/js/admin.js:134
+msgid "Test URL"
+msgstr "URL testen"
+
+#: src/js/admin.js:139 src/js/admin.js:140
 msgid "Foreground"
 msgstr "Vordergrund"
 
-#: src/js/admin.js:130 src/js/admin.js:131
+#: src/js/admin.js:143 src/js/admin.js:144
 msgid "Background"
 msgstr "Hintergrund"
 
-#: src/js/admin.js:132
+#: src/js/admin.js:145
 msgid "Transparent background"
 msgstr "Transparenter Hintergrund"
 
-#: src/js/admin.js:140
+#: src/js/admin.js:153
 msgid "Export size"
 msgstr "Exportgröße"
 
-#: src/js/admin.js:142
+#: src/js/admin.js:155
 msgid "Small — approximately 300 px"
 msgstr "Klein – ungefähr 300 px"
 
-#: src/js/admin.js:143
+#: src/js/admin.js:156
 msgid "Medium — approximately 600 px"
 msgstr "Mittel – ungefähr 600 px"
 
-#: src/js/admin.js:144
+#: src/js/admin.js:157
 msgid "Large — approximately 1200 px"
 msgstr "Groß – ungefähr 1200 px"
 
-#: src/js/admin.js:147
-msgid "The exact dimensions adapt to keep the QR pattern sharp and include a clear margin."
-msgstr "Die genauen Abmessungen werden für ein scharfes QR-Muster und einen freien Rand angepasst."
+#: src/js/admin.js:158
+msgid "Custom size"
+msgstr "Individuelle Größe"
 
-#: src/js/admin.js:150
+#: src/js/admin.js:165
+msgid "Dense QR codes may need a larger image to remain readable. The preview shows the final dimensions."
+msgstr "Dichte QR-Codes benötigen gegebenenfalls ein größeres Bild, um lesbar zu bleiben. Die Vorschau zeigt die endgültigen Maße."
+
+#: src/js/admin.js:168
+msgid "Side length in pixels"
+msgstr "Seitenlänge in Pixeln"
+
+#: src/js/admin.js:172
+msgid "Width and height are identical. Enter a whole number from 128 to 4096."
+msgstr "Breite und Höhe sind identisch. Bitte eine ganze Zahl von 128 bis 4096 eingeben."
+
+#: src/js/admin.js:175
 msgid "These controls change your current download. Site defaults are saved separately."
 msgstr "Diese Einstellungen ändern den aktuellen Download. Website-Standardeinstellungen werden separat gespeichert."
 
-#: src/js/admin.js:152
+#: src/js/admin.js:177
 msgid "Reset to defaults"
 msgstr "Auf Standard zurücksetzen"
 
-#: src/js/admin.js:153
+#: src/js/admin.js:178
 msgid "Saving…"
 msgstr "Wird gespeichert…"
 
-#: src/js/admin.js:153
+#: src/js/admin.js:178
 msgid "Save as defaults"
 msgstr "Als Standard speichern"
 
-#: src/js/admin.js:161
+#: src/js/admin.js:186
 msgid "Preview and download"
 msgstr "Vorschau und Download"
 
-#: src/js/admin.js:165
+#: src/js/admin.js:190
 msgid "Generated QR code"
 msgstr "Generierter QR-Code"
 
-#: src/js/admin.js:166
+#: src/js/admin.js:191
 msgid "Update the settings to generate a QR code."
 msgstr "Bitte die Einstellungen anpassen, um einen QR-Code zu generieren."
 
-#: src/js/admin.js:166
+#: src/js/admin.js:191
 msgid "Generating QR code…"
 msgstr "QR-Code wird generiert…"
 
-#: src/js/admin.js:166
+#: src/js/admin.js:191
 msgid "Enter a URL to see your QR code."
 msgstr "Eine URL eingeben, um den QR-Code anzuzeigen."
 
-#: src/js/admin.js:169
+#: src/js/admin.js:194
 msgid "Preview background"
 msgstr "Vorschauhintergrund"
 
-#: src/js/admin.js:170
+#: src/js/admin.js:195
 msgid "Checkerboard"
 msgstr "Schachbrett"
 
-#: src/js/admin.js:171
+#: src/js/admin.js:196
 msgid "This background is only for the preview; the downloaded PNG stays transparent."
 msgstr "Dieser Hintergrund gilt nur für die Vorschau. Die heruntergeladene PNG-Datei bleibt transparent."
 
-#: src/js/admin.js:173
+#: src/js/admin.js:198
 msgid "These colors have low contrast. Use more contrasting colors and test the code before publishing."
 msgstr "Diese Farben haben einen geringen Kontrast. Bitte kontrastreichere Farben verwenden und den Code vor der Veröffentlichung testen."
 
-#: src/js/admin.js:174
+#: src/js/admin.js:199
 msgid "Test this code on its intended background. Transparent or inverted codes may not work with every scanner."
 msgstr "Diesen Code auf dem vorgesehenen Hintergrund testen. Transparente oder invertierte Codes funktionieren möglicherweise nicht mit jedem Scanner."
 
-#: src/js/admin.js:178 src/js/admin.js:179
+#: src/js/admin.js:203 src/js/admin.js:204
 msgid "Download PNG"
 msgstr "PNG herunterladen"

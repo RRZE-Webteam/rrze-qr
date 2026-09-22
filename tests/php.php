@@ -225,3 +225,21 @@ check($main->rrze_qr_add_create_link([], $GLOBALS['posts'][42]) === [], 'Subscri
 try { $main->rrze_qr_admin_page(); throw new RuntimeException('Subscriber access succeeded'); }
 catch (JsonResponse $response) { check($response->status === 403, 'Subscribers must not access the workspace'); }
 echo "PHP author/editor access checks passed.\n";
+
+
+$GLOBALS['caps'] = ['manage_options' => true];
+foreach (['128', '512', '0750', '4096'] as $size) {
+    $response = save_defaults($main, ['foreground' => 'black', 'background' => 'white', 'size' => $size]);
+    check($response->success && $response->data['size'] === (int) $size, 'Custom sizes must be stored as integers');
+    $main->rrze_qr_enqueue_scripts('toplevel_page_rrze-qr');
+    check($GLOBALS['localized']['rrzeQrAdmin']['defaults']['size'] === (int) $size, 'Custom sizes must survive reloading the workspace');
+}
+$before = $GLOBALS['options']['rrze_qr_defaults'];
+foreach ([null, '', ' ', '0', '-1', '127', '4097', '512.5', '1e3', '512px', ' 512', ['512'], true, 512.5] as $size) {
+    check(save_defaults($main, ['foreground' => 'black', 'background' => 'white', 'size' => $size])->status === 400, 'Malformed or out-of-range sizes must be rejected');
+    check($GLOBALS['options']['rrze_qr_defaults'] === $before, 'Invalid sizes must not replace saved defaults');
+}
+$GLOBALS['options']['rrze_qr_defaults']['size'] = 99999;
+$main->rrze_qr_enqueue_scripts('toplevel_page_rrze-qr');
+check($GLOBALS['localized']['rrzeQrAdmin']['defaults']['size'] === 300, 'Invalid stored sizes must fall back to the default');
+echo "PHP custom export size checks passed.\n";

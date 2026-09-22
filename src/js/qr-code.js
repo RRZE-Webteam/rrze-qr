@@ -1,3 +1,5 @@
+const { normalizeSize } = require('./qr-settings');
+
 // Byte capacities for QR versions 1–40 at error correction level L.
 const capacities = [17, 32, 53, 78, 106, 134, 154, 192, 230, 271, 321, 367, 425, 458,
     520, 586, 644, 718, 792, 858, 929, 1003, 1091, 1171, 1273, 1367, 1465, 1528,
@@ -29,15 +31,21 @@ function normalizeUrl(value) {
 
 function createQr(QRious, options) {
     const value = normalizeUrl(options.value);
+    const requestedSize = normalizeSize(options.size === undefined ? 300 : options.size);
+    if (requestedSize === null) {
+        throw inputError('invalidSize', 'Enter a whole number between 128 and 4096 pixels.');
+    }
     const version = capacities.findIndex(capacity => value.length <= capacity) + 1;
     const modules = 17 + 4 * version;
     // Include four blank modules on each edge; keep modules at least two pixels wide.
-    const moduleSize = Math.max(2, Math.floor((options.size || 300) / (modules + 8)));
+    const size = Math.max(requestedSize, (modules + 8) * 2);
+    const moduleSize = Math.floor(size / (modules + 8));
     return new QRious(Object.assign({}, options, {
         value,
         level: 'L',
-        size: (modules + 8) * moduleSize,
-        padding: 4 * moduleSize
+        size,
+        // Put unused pixels in the margin, preserving exact square dimensions.
+        padding: Math.floor((size - modules * moduleSize) / 2)
     }));
 }
 
