@@ -1,6 +1,6 @@
 {
   "name": "rrze-qr",
-  "version": "1.1.0",
+  "version": "2.0.0",
   "description": "Plugin to generate QR codes",
   "author": "RRZE Webteam",
   "license": "GPL-3.0-or-later",
@@ -23,7 +23,8 @@
     "test": "node --test tests/*.test.js && php tests/php.php",
     "lint:php": "php tests/lint.php",
     "release:patch": "node increment-version.js patch",
-    "release:minor": "node increment-version.js minor"
+    "release:minor": "node increment-version.js minor",
+    "release:major": "node increment-version.js major"
   },
   "devDependencies": {
     "@wordpress/components": "^25.8.14",

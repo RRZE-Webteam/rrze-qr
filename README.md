@@ -80,8 +80,10 @@ npm run lint:php
 ```
 
 The lockfile pins dependencies. Builds regenerate the committed files in `assets/`
-and do not change the plugin version. Use `npm run release:patch` or
-`npm run release:minor` explicitly when preparing a release.
+and do not change the plugin version. Use `npm run release:patch`,
+`npm run release:minor`, or `npm run release:major` explicitly when preparing a
+release. The release command keeps the plugin header, package manifest, and
+lockfile versions in sync.
 
 `Main` constructs `Settings` and `QRCode` and registers their WordPress hooks.
 `Settings` owns site defaults, validation on save, and migration; `QRCode` owns the
