@@ -128,10 +128,6 @@
     font-variant-numeric: tabular-nums;
 }
 
-.rrze-qr-row-status {
-    margin-inline-start: 6px;
-}
-
 @media (max-width: 900px) {
     .rrze-qr-layout {
         grid-template-columns: minmax(0, 1fr);
@@ -147,4 +143,13 @@
     .rrze-qr-layout .components-card__body {
         padding: 16px;
     }
+}
+
+.rrze-qr-source {
+    grid-column: 1 / -1;
+}
+
+.rrze-qr-source p {
+    margin: 0 0 8px;
+    font-weight: 600;
 }

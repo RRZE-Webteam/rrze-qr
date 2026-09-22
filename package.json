@@ -4,7 +4,7 @@
   "description": "Plugin to generate QR codes",
   "author": "RRZE Webteam",
   "license": "GPL-3.0-or-later",
-  "main": "assets/js/rrze-qr.min.js",
+  "main": "assets/js/admin.min.js",
   "textdomain": "rrze-qr",
   "browserslist": [
     "extends @wordpress/browserslist-config"
@@ -30,8 +30,6 @@
     "@wordpress/element": "^5.19.13",
     "@wordpress/i18n": "^4.42.13",
     "@wordpress/scripts": "^35.0.0",
-    "jquery": "^4.0.0",
-    "jsdom": "^26.1.0",
     "jsqr": "^1.4.0",
     "sass": "^1.104.1"
   },

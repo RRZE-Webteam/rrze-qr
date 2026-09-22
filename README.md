@@ -25,18 +25,26 @@ A transparent preview has a background selector; this affects the preview only,
 and the downloaded image remains transparent.
 
 Changes apply to the current download. Administrators can explicitly **Save as
-defaults** to set the colors and export size for future codes, including downloads
-from post and page lists. The destination URL is never saved as a site default.
+defaults** to set the colors and export size for future codes. The destination URL is never saved as a site default.
 **Reset to defaults** restores the saved appearance without changing the URL.
 
 Existing color settings are retained when upgrading. Bookmarks to the former
 Tools and Settings pages redirect to the new workspace.
 
-## Downloads from post and page lists
+## QR codes from post and page lists
 
-Use **Download QR** on a published post or page that you can edit. The download
-uses the item's permalink and the site's current default colors and size. The
-server enforces the same publication and permission requirements as the row action.
+Use **Create QR code** (**QR-Code erstellen**) on a published post or page to open
+its title and current permalink in the workspace. Choose colors and size, preview
+the result, and download the PNG there. A return link leads back to the source list.
+
+Authors can use the workspace and create QR codes for their own published posts.
+Editors can also use the row action on other authors' published posts and pages.
+Access follows WordPress editing permissions and is checked again when opening
+the workspace. Only administrators can save site defaults.
+
+Downloads use descriptive filenames such as `qr-code-contact-42.png` while the
+destination URL matches the selected item. QR scripts and styles load only in the
+workspace; post and page lists contain a regular link and no QR notices.
 
 ## Validation and scanning
 
@@ -71,12 +79,11 @@ and do not change the plugin version. Use `npm run release:patch` or
 
 The React workspace has its own entry point in `src/js/admin.js`. WordPress supplies
 `wp-components`, `wp-element`, `wp-i18n`, and the components stylesheet. JSX uses
-the classic transform to support WordPress 6.4. The small post-list entry point
-uses WordPress's `jquery` dependency; npm jQuery is only for development tests.
-QRious is copied from the locked npm dependency when building.
+the classic transform to support WordPress 6.4. QRious is copied from the locked
+npm dependency when building.
 
 Automated checks cover QR decoding and capacity, quiet zones, color combinations,
-post downloads, permissions, default persistence, legacy settings, and asset
+contextual workspace access, permissions, default persistence, legacy settings, and asset
 registration. PHP checks use isolated WordPress stubs and do not change the
 database. Browser interaction and visual checks are performed manually.
 

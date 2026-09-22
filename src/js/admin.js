@@ -30,6 +30,9 @@ function Workspace({ config }) {
     const [saving, setSaving] = useState(false);
     const [saveNotice, setSaveNotice] = useState(null);
     const { foreground, background, size } = settings;
+    const sourceMatches = config.context && url.trim() === config.context.url;
+    /* translators: %s: post or page title. */
+    const sourceTitle = sourceMatches ? sprintf(__('QR code for %s', 'rrze-qr'), config.context.title) : null;
     const key = JSON.stringify([url, foreground, background, size]);
     const dirty = foreground !== defaults.foreground || background !== defaults.background || size !== defaults.size;
     const colors = useMemo(() => {
@@ -105,6 +108,10 @@ function Workspace({ config }) {
 
     return (
         <div className="rrze-qr-layout">
+            {config.context && <div className="rrze-qr-source">
+                {sourceTitle && <p>{sourceTitle}</p>}
+                <a href={config.context.backUrl}>{config.context.backLabel}</a>
+            </div>}
             <Card className="rrze-qr-controls">
                 <CardBody>
                     <h2>{__('Configure your QR code', 'rrze-qr')}</h2>
@@ -168,7 +175,7 @@ function Workspace({ config }) {
                     <p className="rrze-qr-dimensions" role="status" aria-live="polite">{currentImage && !error
                         ? imageDimensions(currentImage.width) : '\u00a0'}</p>
                     {currentImage && !error
-                        ? <Button variant="primary" href={currentImage.src} download="qr-code.png">{__('Download PNG', 'rrze-qr')}</Button>
+                        ? <Button variant="primary" href={currentImage.src} download={sourceMatches ? config.context.filename : 'qr-code.png'}>{__('Download PNG', 'rrze-qr')}</Button>
                         : <Button variant="primary" disabled>{__('Download PNG', 'rrze-qr')}</Button>}
                 </CardBody>
             </Card>

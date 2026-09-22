@@ -7,7 +7,7 @@ if (PHP_SAPI !== 'cli') {
 define('ABSPATH', __DIR__ . '/');
 class WP_Post
 {
-    public function __construct(public int $ID, public string $post_status = 'publish', public string $post_type = 'post') {}
+    public function __construct(public int $ID, public string $post_status = 'publish', public string $post_type = 'post', public string $post_name = 'contact', public string $post_title = 'Contact') {}
 }
 class JsonResponse extends RuntimeException
 {
@@ -18,13 +18,14 @@ function esc_html__($text, $domain) { return htmlspecialchars($text, ENT_QUOTES)
 function esc_html_e($text, $domain) { echo esc_html__($text, $domain); }
 function esc_attr_e($text, $domain) { echo esc_attr($text); }
 function get_option($name, $default = false) { return $GLOBALS['options'][$name] ?? $default; }
-function add_settings_error($setting, $code, $message) { $GLOBALS['settings_errors'][] = $message; }
 function wp_unslash($value) { return $value; }
+function esc_html($value) { return htmlspecialchars((string) $value, ENT_QUOTES); }
+function esc_url($value) { return esc_attr($value); }
+function add_query_arg($args, $url) { return $url . '?' . http_build_query($args); }
+function sanitize_file_name($value) { return preg_replace('/[^a-zA-Z0-9_-]/', '', $value); }
+function wp_strip_all_tags($value) { return strip_tags($value); }
+function get_the_title($post) { return $post->post_title; }
 function esc_attr($value) { return htmlspecialchars((string) $value, ENT_QUOTES); }
-function settings_errors($group) {}
-function settings_fields($group) {}
-function submit_button() {}
-function checked($actual, $expected) {}
 function plugins_url($path, $file) { return 'https://example.test/plugins/rrze-qr/' . $path; }
 function wp_enqueue_script($handle, $url, $dependencies, $version, $footer) { $GLOBALS['assets'][$handle] = compact('dependencies', 'version'); }
 function wp_enqueue_style($handle, $url, $dependencies, $version) { $GLOBALS['assets'][$handle] = compact('dependencies', 'version'); }
@@ -54,35 +55,6 @@ $main = new RRZE\QR\Main(__DIR__ . '/../rrze-qr.php');
 $GLOBALS['allowed'] = true;
 $GLOBALS['valid_nonce'] = true;
 $GLOBALS['posts'] = [42 => new WP_Post(42)];
-function request($main, $id): JsonResponse {
-    $_POST = $id === null ? [] : ['post_id' => $id];
-    try { $main->rrze_qr_get_permalink(); } catch (JsonResponse $response) { return $response; }
-    throw new RuntimeException('Endpoint did not terminate');
-}
-foreach ([null, '', '0', '-1', '42x', '1.5', ['42'], str_repeat('9', 40)] as $invalid) {
-    check(request($main, $invalid)->status === 400, 'Malformed IDs must be rejected');
-}
-check(request($main, '42')->success, 'Authorized published post should succeed');
-check(request($main, '99')->status === 403, 'Missing post must be rejected');
-foreach (['draft', 'private', 'trash', 'future'] as $status) {
-    $GLOBALS['posts'][42]->post_status = $status;
-    check(request($main, '42')->status === 403, 'Non-published posts must be rejected');
-    check($main->rrze_qr_add_download_link([], $GLOBALS['posts'][42]) === [], 'Hidden posts must have no action');
-}
-$GLOBALS['posts'][42]->post_status = 'publish';
-$GLOBALS['posts'][42]->post_type = 'attachment';
-check(request($main, '42')->status === 403, 'Unsupported types must be rejected');
-$GLOBALS['posts'][42]->post_type = 'page';
-check(request($main, '42')->success, 'Authorized published page should succeed');
-$GLOBALS['allowed'] = false;
-check(request($main, '42')->status === 403, 'Nonce must not bypass capabilities');
-check($main->rrze_qr_add_download_link([], $GLOBALS['posts'][42]) === [], 'Unauthorized users must have no action');
-$GLOBALS['allowed'] = true;
-$GLOBALS['valid_nonce'] = false;
-check(request($main, '42')->status === 403, 'Invalid nonce must be rejected');
-echo "PHP endpoint checks passed.\n";
-
-$GLOBALS['valid_nonce'] = true;
 $GLOBALS['caps'] = ['manage_options' => true];
 function save_defaults($main, $data): JsonResponse {
     $_POST = $data;
@@ -107,7 +79,6 @@ $response = save_defaults($main, ['foreground' => ' #A1b ', 'background' => '#FE
 $custom = ['foreground' => '#aa11bb', 'background' => '#fedcba', 'size' => 600];
 check($response->success && $response->data === $custom, 'Custom colors must be normalized and returned');
 check($GLOBALS['options']['rrze_qr_defaults'] === $custom, 'Custom defaults must be persisted');
-check(request($main, '42')->data['colors'] === ['foreground' => '#aa11bb', 'background' => '#fedcba', 'backgroundAlpha' => 1], 'Post downloads must use custom defaults');
 $main->rrze_qr_enqueue_scripts('toplevel_page_rrze-qr');
 check($GLOBALS['localized']['rrzeQrAdmin']['defaults'] === $custom, 'Workspace must restore custom defaults');
 foreach (['#12', '#gggggg', '#0008', '#00000080', 'url(x)', 'rgb(0,0,0)', ['#123456']] as $invalid) {
@@ -121,7 +92,6 @@ foreach (['#12', '#gggggg', '#0008', '#00000080', 'url(x)', 'rgb(0,0,0)', ['#123
 check(save_defaults($main, ['foreground' => '#fff', 'background' => 'white', 'size' => '300'])->status === 400, 'Equivalent colors must be rejected after normalization');
 check(save_defaults($main, ['foreground' => 'transparent', 'background' => '#fff', 'size' => '300'])->status === 400, 'Foreground must be opaque');
 check(save_defaults($main, ['foreground' => '#123456', 'background' => 'transparent', 'size' => '300'])->success, 'Custom foreground supports transparency');
-check(request($main, '42')->data['colors'] === ['foreground' => '#123456', 'background' => '#ffffff', 'backgroundAlpha' => 0], 'Post downloads must preserve transparency');
 $GLOBALS['caps'] = ['edit_posts' => true];
 check(save_defaults($main, ['foreground' => 'black', 'background' => 'white', 'size' => '300'])->status === 403, 'Editors must not save site defaults');
 $GLOBALS['caps'] = ['manage_options' => true];
@@ -132,7 +102,6 @@ $GLOBALS['fail_update'] = true;
 check(save_defaults($main, ['foreground' => 'black', 'background' => 'white', 'size' => '1200'])->status === 500, 'Storage failures must be reported');
 $GLOBALS['fail_update'] = false;
 check(save_defaults($main, ['foreground' => 'black', 'background' => 'white', 'size' => '1200'])->success, 'Administrator can save defaults');
-check(request($main, '42')->data['size'] === 1200, 'Post downloads must use the saved size');
 echo "PHP defaults checks passed.\n";
 
 $GLOBALS['caps'] = [];
@@ -156,17 +125,15 @@ $GLOBALS['assets'] = []; $GLOBALS['localized'] = [];
 $main->rrze_qr_enqueue_scripts('index.php');
 check(empty($GLOBALS['assets']) && empty($GLOBALS['localized']), 'Unrelated admin screens must not load QR assets or configuration');
 $main->rrze_qr_enqueue_scripts('edit.php');
-$asset = require __DIR__ . '/../assets/js/rrze-qr.min.asset.php';
-check($GLOBALS['assets']['rrze-qr-js']['version'] === $asset['version'], 'JavaScript must use its build hash');
-check(!isset($GLOBALS['assets']['rrze-qr-admin']), 'Post lists must not load the React application');
-check(in_array('jquery', $GLOBALS['assets']['rrze-qr-js']['dependencies'], true), 'Post actions use WordPress jQuery');
-check($GLOBALS['assets']['rrze-qr-css']['version'] === hash_file('sha256', __DIR__ . '/../assets/css/rrze-qr.min.css'), 'CSS must use its content hash');
-$GLOBALS['assets'] = []; $GLOBALS['localized'] = [];
+check(empty($GLOBALS['assets']) && empty($GLOBALS['localized']), 'Post and page lists must not load QR assets or configuration');
 $GLOBALS['caps'] = ['edit_pages' => true];
 $main->rrze_qr_enqueue_scripts('toplevel_page_rrze-qr');
 $dependencies = $GLOBALS['assets']['rrze-qr-admin']['dependencies'];
 foreach (['wp-components', 'wp-element', 'wp-i18n'] as $handle) { check(in_array($handle, $dependencies, true), 'WordPress supplies ' . $handle); }
 check(!in_array('react-jsx-runtime', $dependencies, true), 'Use the JSX transform compatible with WordPress 6.4');
+$asset = require __DIR__ . '/../assets/js/admin.min.asset.php';
+check($GLOBALS['assets']['rrze-qr-admin']['version'] === $asset['version'], 'Workspace must use its build hash');
+check($GLOBALS['assets']['rrze-qr-css']['version'] === hash_file('sha256', __DIR__ . '/../assets/css/rrze-qr.min.css'), 'CSS must use its content hash');
 check($GLOBALS['assets']['rrze-qr-css']['dependencies'] === ['wp-components'], 'Load the WordPress components stylesheet');
 check(!$GLOBALS['localized']['rrzeQrAdmin']['canSaveDefaults'], 'Editors must not see the save defaults action');
 check(!isset($GLOBALS['assets']['rrze-qr-js']), 'Workspace must not load the old jQuery interface');
@@ -176,3 +143,85 @@ $GLOBALS['options']['rrze_qr_background'] = 'white';
 $main->rrze_qr_enqueue_scripts('toplevel_page_rrze-qr');
 check($GLOBALS['localized']['rrzeQrAdmin']['defaults'] === ['foreground' => '#04316a', 'background' => '#ffffff', 'size' => 300], 'Existing site color defaults must survive the upgrade');
 echo "PHP asset and migration checks passed.\n";
+
+// Row actions and contextual workspace must share permission checks.
+$GLOBALS['caps'] = ['edit_pages' => true];
+$GLOBALS['posts'][42]->post_title = 'Contact <script>alert(1)</script> &amp; Support';
+$actions = $main->rrze_qr_add_create_link([], $GLOBALS['posts'][42]);
+check(array_keys($actions) === ['create_qr'], 'Exactly one QR row action must be available');
+check(str_contains($actions['create_qr'], 'post_id=42') && !str_contains($actions['create_qr'], 'href="#"'), 'Create action must link to the contextual workspace');
+check(str_contains($actions['create_qr'], 'aria-label="Create QR code for Contact') && !str_contains($actions['create_qr'], '<script>'), 'Contextual labels must be escaped');
+$_GET['post_id'] = '42';
+foreach (['post', 'page'] as $type) {
+    $GLOBALS['posts'][42]->post_type = $type;
+    $main->rrze_qr_enqueue_scripts('toplevel_page_rrze-qr');
+    $config = $GLOBALS['localized']['rrzeQrAdmin'];
+    check(str_contains($config['context']['title'], '& Support') && !str_contains($config['context']['title'], '&amp;'), 'Workspace titles must contain readable text, not HTML entities');
+    check($config['initialUrl'] === get_permalink(42), 'Workspace must prefill the current permalink');
+    check($config['context']['filename'] === 'qr-code-contact-42.png', 'Workspace must reuse the descriptive filename');
+    check($config['context']['backUrl'] === admin_url($type === 'page' ? 'edit.php?post_type=page' : 'edit.php'), 'Back link must match the source list');
+}
+// Unsupported content types must not gain access via a manually constructed link.
+$GLOBALS['posts'][42]->post_type = 'attachment';
+check($main->rrze_qr_add_create_link([], $GLOBALS['posts'][42]) === [], 'Unsupported types must have no row action');
+try { $main->rrze_qr_admin_page(); throw new RuntimeException('Unsupported context succeeded'); }
+catch (JsonResponse $response) { check($response->status === 403, 'Unsupported types must not load the workspace'); }
+$GLOBALS['posts'][42]->post_type = 'page';
+foreach (['', '0', '-1', '42x', '1.5', ['42'], str_repeat('9', 40)] as $invalid) {
+    $_GET['post_id'] = $invalid;
+    try { $main->rrze_qr_enqueue_scripts('toplevel_page_rrze-qr'); throw new RuntimeException('Invalid context succeeded'); }
+    catch (JsonResponse $response) { check($response->status === 400, 'Malformed workspace IDs must be rejected'); }
+}
+foreach (['draft', 'private', 'trash', 'future'] as $status) {
+    $_GET['post_id'] = '42';
+    $GLOBALS['posts'][42]->post_status = $status;
+    check($main->rrze_qr_add_create_link([], $GLOBALS['posts'][42]) === [], 'Non-public posts must have no row action');
+    try { $main->rrze_qr_enqueue_scripts('toplevel_page_rrze-qr'); throw new RuntimeException('Non-public context succeeded'); }
+    catch (JsonResponse $response) { check($response->status === 403, 'Non-public posts must not prefill the workspace'); }
+}
+$GLOBALS['posts'][42]->post_status = 'publish';
+foreach (['99', '42'] as $id) {
+    $_GET['post_id'] = $id;
+    $GLOBALS['allowed'] = false;
+    try { $main->rrze_qr_admin_page(); throw new RuntimeException('Unauthorized context succeeded'); }
+    catch (JsonResponse $response) { check($response->status === 403, 'Missing or unauthorized posts must not expose context'); }
+}
+$GLOBALS['allowed'] = true;
+unset($_GET['post_id']);
+$main->rrze_qr_enqueue_scripts('toplevel_page_rrze-qr');
+check($GLOBALS['localized']['rrzeQrAdmin']['context'] === null, 'Standalone generator must remain available');
+echo "PHP row action and contextual workspace checks passed.\n";
+
+// Capabilities mirror the WordPress author/editor roles, with per-item access
+// supplied independently to ensure list links and direct workspace access agree.
+foreach ([
+    'author' => ['read' => true, 'edit_posts' => true, 'edit_published_posts' => true],
+    'editor' => ['read' => true, 'edit_posts' => true, 'edit_pages' => true, 'edit_others_posts' => true, 'edit_others_pages' => true],
+] as $role => $caps) {
+    $GLOBALS['caps'] = $caps;
+    $main->rrze_qr_admin_menu();
+    check(!empty($caps[$GLOBALS['menu'][2]]), "$role must have access to the QR menu");
+    $GLOBALS['posts'][42]->post_type = 'post';
+    $GLOBALS['allowed'] = true;
+    check(count($main->rrze_qr_add_create_link([], $GLOBALS['posts'][42])) === 1, "$role must be able to create QR codes for editable posts");
+    $_GET['post_id'] = '42';
+    $main->rrze_qr_enqueue_scripts('toplevel_page_rrze-qr');
+    check($GLOBALS['localized']['rrzeQrAdmin']['initialUrl'] === get_permalink(42), "$role must be able to open the contextual workspace");
+    check(!$GLOBALS['localized']['rrzeQrAdmin']['canSaveDefaults'], "$role must not see Save as defaults");
+    ob_start(); $main->rrze_qr_admin_page(); $html = ob_get_clean();
+    check(str_contains($html, 'id="rrze-qr-app"'), "$role must be able to render the workspace");
+    check(save_defaults($main, ['foreground' => 'black', 'background' => 'white', 'size' => '300'])->status === 403, "$role must not save site defaults");
+    $GLOBALS['allowed'] = false;
+    check($main->rrze_qr_add_create_link([], $GLOBALS['posts'][42]) === [], 'Non-editable posts must not have a QR action');
+    try { $main->rrze_qr_admin_page(); throw new RuntimeException('Non-editable post context succeeded'); }
+    catch (JsonResponse $response) { check($response->status === 403, 'Direct links must also enforce per-post editing permission'); }
+    $GLOBALS['allowed'] = true;
+    unset($_GET['post_id']);
+    $main->rrze_qr_enqueue_scripts('toplevel_page_rrze-qr');
+    check($GLOBALS['localized']['rrzeQrAdmin']['context'] === null, "$role must also access the standalone generator");
+}
+$GLOBALS['caps'] = ['read' => true];
+check($main->rrze_qr_add_create_link([], $GLOBALS['posts'][42]) === [], 'Subscribers must not have a QR action');
+try { $main->rrze_qr_admin_page(); throw new RuntimeException('Subscriber access succeeded'); }
+catch (JsonResponse $response) { check($response->status === 403, 'Subscribers must not access the workspace'); }
+echo "PHP author/editor access checks passed.\n";

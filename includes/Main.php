@@ -29,12 +29,11 @@ class Main
     public function onLoaded()
     {
         add_action('admin_enqueue_scripts', [$this, 'rrze_qr_enqueue_scripts']);
-        add_filter('post_row_actions', [$this, 'rrze_qr_add_download_link'], 10, 2);
-        add_filter('page_row_actions', [$this, 'rrze_qr_add_download_link'], 10, 2);
+        add_filter('post_row_actions', [$this, 'rrze_qr_add_create_link'], 10, 2);
+        add_filter('page_row_actions', [$this, 'rrze_qr_add_create_link'], 10, 2);
         add_action('admin_menu', [$this, 'rrze_qr_admin_menu']);
         add_action('admin_init', [$this, 'rrze_qr_migrate_legacy_color_option'], 5);
         add_action('admin_init', [$this, 'rrze_qr_redirect_legacy_page']);
-        add_action('wp_ajax_rrze_qr_get_permalink', [$this, 'rrze_qr_get_permalink']);
         add_action('wp_ajax_rrze_qr_save_defaults', [$this, 'rrze_qr_ajax_save_defaults']);
     }
 
@@ -43,39 +42,77 @@ class Main
 
     public function rrze_qr_enqueue_scripts($hook)
     {
-        $workspace = $hook === 'toplevel_page_rrze-qr';
-        if (!$workspace && $hook !== 'edit.php') {
+        if ($hook !== 'toplevel_page_rrze-qr' || !$this->rrze_qr_can_generate()) {
             return;
         }
-        if ($workspace && !$this->rrze_qr_can_generate()) {
-            return;
-        }
+        $context = $this->rrze_qr_workspace_context();
         $base = dirname($this->pluginFile);
-        $name = $workspace ? 'admin' : 'rrze-qr';
-        $handle = $workspace ? 'rrze-qr-admin' : 'rrze-qr-js';
-        $asset = require $base . '/assets/js/' . $name . '.min.asset.php';
+        $asset = require $base . '/assets/js/admin.min.asset.php';
         wp_enqueue_script('rrze-qr-qrious', plugins_url('assets/js/qrious.min.js', $this->pluginFile), [], hash_file('sha256', $base . '/assets/js/qrious.min.js'), true);
-        wp_enqueue_script($handle, plugins_url('assets/js/' . $name . '.min.js', $this->pluginFile), array_merge(['rrze-qr-qrious'], $workspace ? $asset['dependencies'] : array_merge(['jquery'], $asset['dependencies'])), $asset['version'], true);
-        wp_enqueue_style('rrze-qr-css', plugins_url('assets/css/rrze-qr.min.css', $this->pluginFile), $workspace ? ['wp-components'] : [], hash_file('sha256', $base . '/assets/css/rrze-qr.min.css'));
-        if ($workspace) {
-            wp_set_script_translations($handle, 'rrze-qr', $base . '/languages');
-            wp_localize_script($handle, 'rrzeQrAdmin', [
-                'ajaxurl' => admin_url('admin-ajax.php'),
-                'nonce' => wp_create_nonce('rrze-qr-nonce'),
-                'defaults' => $this->rrze_qr_get_defaults(),
-                'initialUrl' => home_url('/'),
-                'canSaveDefaults' => current_user_can('manage_options'),
-            ]);
-        } else {
-            $this->rrze_qr_localize_script();
-        }
+        wp_enqueue_script('rrze-qr-admin', plugins_url('assets/js/admin.min.js', $this->pluginFile), array_merge(['rrze-qr-qrious'], $asset['dependencies']), $asset['version'], true);
+        wp_enqueue_style('rrze-qr-css', plugins_url('assets/css/rrze-qr.min.css', $this->pluginFile), ['wp-components'], hash_file('sha256', $base . '/assets/css/rrze-qr.min.css'));
+        wp_set_script_translations('rrze-qr-admin', 'rrze-qr', $base . '/languages');
+        wp_localize_script('rrze-qr-admin', 'rrzeQrAdmin', [
+            'ajaxurl' => admin_url('admin-ajax.php'),
+            'nonce' => wp_create_nonce('rrze-qr-nonce'),
+            'defaults' => $this->rrze_qr_get_defaults(),
+            'initialUrl' => $context['url'] ?? home_url('/'),
+            'context' => $context,
+            'canSaveDefaults' => current_user_can('manage_options'),
+        ]);
     }
 
-    // Add "Download QR" link to posts and pages list
-    public function rrze_qr_add_download_link($actions, $post)
+    private function rrze_qr_workspace_url($post)
     {
-        if ($this->rrze_qr_can_download($post)) {
-            $actions['download_qr'] = '<a href="#" class="download-qr" data-id="' . esc_attr($post->ID) . '">' . esc_html__('Download QR', 'rrze-qr') . '</a>';
+        return add_query_arg(['page' => 'rrze-qr', 'post_id' => $post->ID], admin_url('admin.php'));
+    }
+
+    private function rrze_qr_download_filename($post)
+    {
+        $slug = sanitize_file_name(urldecode($post->post_name));
+        return 'qr-code-' . ($slug !== '' ? $slug . '-' : '') . $post->ID . '.png';
+    }
+
+    private function rrze_qr_post_title($post)
+    {
+        return html_entity_decode(wp_strip_all_tags(get_the_title($post)), ENT_QUOTES, get_option('blog_charset', 'UTF-8')) ?: __('Untitled', 'rrze-qr');
+    }
+
+    private function rrze_qr_workspace_context()
+    {
+        if (!isset($_GET['post_id'])) {
+            return null;
+        }
+        $raw_id = wp_unslash($_GET['post_id']);
+        $id = is_string($raw_id) ? filter_var($raw_id, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]) : false;
+        if ($id === false) {
+            wp_die(esc_html__('Invalid post ID.', 'rrze-qr'), '', ['response' => 400]);
+        }
+        $post = get_post($id);
+        if (!$this->rrze_qr_can_generate_for_post($post)) {
+            wp_die(esc_html__('You cannot generate a QR code for this post.', 'rrze-qr'), '', ['response' => 403]);
+        }
+        $url = get_permalink($id);
+        if (!$url) {
+            wp_die(esc_html__('Could not retrieve permalink.', 'rrze-qr'), '', ['response' => 404]);
+        }
+        return [
+            'url' => $url,
+            'title' => $this->rrze_qr_post_title($post),
+            'filename' => $this->rrze_qr_download_filename($post),
+            'backUrl' => $post->post_type === 'page' ? admin_url('edit.php?post_type=page') : admin_url('edit.php'),
+            'backLabel' => $post->post_type === 'page' ? __('Back to pages', 'rrze-qr') : __('Back to posts', 'rrze-qr'),
+        ];
+    }
+
+    public function rrze_qr_add_create_link($actions, $post)
+    {
+        if ($this->rrze_qr_can_generate_for_post($post)) {
+            $title = $this->rrze_qr_post_title($post);
+            $url = esc_url($this->rrze_qr_workspace_url($post));
+            /* translators: %s: post or page title. */
+            $label = sprintf(__('Create QR code for %s', 'rrze-qr'), $title);
+            $actions['create_qr'] = '<a href="' . $url . '" aria-label="' . esc_attr($label) . '">' . esc_html__('Create QR code', 'rrze-qr') . '</a>';
         }
         return $actions;
     }
@@ -116,6 +153,7 @@ class Main
         if (!$this->rrze_qr_can_generate()) {
             wp_die(esc_html__('You do not have permission to generate QR codes.', 'rrze-qr'), '', ['response' => 403]);
         }
+        $this->rrze_qr_workspace_context();
         ?>
         <div class="wrap rrze-qr-workspace">
             <h1><?php esc_html_e('QR-Codes', 'rrze-qr'); ?></h1>
@@ -248,80 +286,13 @@ class Main
         wp_send_json_success($defaults);
     }
 
-    /**
-     * Farbwerte für QRious aus Vorder-/Hintergrund-Tokens (bereits sanitisiert).
-     *
-     * @param array{foreground: string, background: string} $tokens
-     * @return array{foreground: string, background: string, backgroundAlpha: int}
-     */
-    private function rrze_qr_colors_for_qrious_from_tokens(array $tokens)
+    private function rrze_qr_can_generate_for_post($post)
     {
-        return [
-            'foreground' => $tokens['foreground'],
-            'background' => $tokens['background'] === 'transparent' ? '#ffffff' : $tokens['background'],
-            'backgroundAlpha' => $tokens['background'] === 'transparent' ? 0 : 1,
-        ];
-    }
-
-    /**
-     * Farbwerte für QRious (gespeicherte Einstellung).
-     *
-     * @return array{foreground: string, background: string, backgroundAlpha: int}
-     */
-    private function rrze_qr_colors_for_qrious()
-    {
-        return $this->rrze_qr_colors_for_qrious_from_tokens($this->rrze_qr_get_defaults());
-    }
-
-    // Handle AJAX request to get permalink
-    public function rrze_qr_get_permalink()
-    {
-        check_ajax_referer('rrze-qr-nonce', 'nonce');
-
-        $raw_id = isset($_POST['post_id']) ? wp_unslash($_POST['post_id']) : null;
-        $post_id = is_string($raw_id) ? filter_var($raw_id, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]) : false;
-        if ($post_id === false) {
-            wp_send_json_error(__('Invalid post ID.', 'rrze-qr'), 400);
-        }
-        $post = get_post($post_id);
-        if (!$this->rrze_qr_can_download($post)) {
-            wp_send_json_error(__('You cannot generate a QR code for this post.', 'rrze-qr'), 403);
-        }
-        $permalink = get_permalink($post_id);
-
-        if ($permalink) {
-            wp_send_json_success(['url' => $permalink, 'colors' => $this->rrze_qr_colors_for_qrious(), 'size' => $this->rrze_qr_get_defaults()['size']]);
-        } else {
-            wp_send_json_error(__('Could not retrieve permalink.', 'rrze-qr'), 404);
-        }
-    }
-
-    private function rrze_qr_can_download($post)
-    {
-        return $post instanceof \WP_Post
+        return $this->rrze_qr_can_generate()
+            && $post instanceof \WP_Post
             && $post->post_status === 'publish'
             && in_array($post->post_type, ['post', 'page'], true)
             && current_user_can('edit_post', $post->ID);
     }
 
-    // Localize script for AJAX
-    public function rrze_qr_localize_script()
-    {
-        wp_localize_script(
-            'rrze-qr-js',
-            'rrzeQr',
-            [
-                'ajaxurl' => admin_url('admin-ajax.php'),
-                'nonce' => wp_create_nonce('rrze-qr-nonce'),
-                'strings' => [
-                    'invalidUrl' => __('Enter a valid HTTP or HTTPS URL.', 'rrze-qr'),
-                    'tooLong' => __('This URL is too long for a QR code. Use a shorter URL (maximum 2,953 encoded characters).', 'rrze-qr'),
-                    'requestFailed' => __('The request failed. Reload the page and try again.', 'rrze-qr'),
-                    'generationFailed' => __('The QR code could not be generated. Reload the page and try again.', 'rrze-qr'),
-                    'generating' => __('Generating QR code…', 'rrze-qr'),
-                    'downloadStarted' => __('QR code download started.', 'rrze-qr'),
-                ],
-            ]
-        );
-    }
 }
