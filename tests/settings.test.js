@@ -19,7 +19,7 @@ test('preserves legacy presets and allows custom opaque hex colors', () => {
     assert.deepEqual(resolveColors('#123456', 'transparent'), {
         foreground: '#123456', background: '#ffffff', backgroundAlpha: 0
     });
-    assert.equal(normalizeColor('FAU'), '#003366');
+    assert.equal(normalizeColor('FAU'), '#04316a');
 });
 
 test('rejects invalid colors and equivalent foreground/background values', () => {
@@ -30,7 +30,7 @@ test('rejects invalid colors and equivalent foreground/background values', () =>
             assert.throws(() => resolveColors('#000', value), { code: 'invalidColor' });
         }
     }
-    for (const [foreground, background] of [['white', '#fff'], ['#abc', '#AABBCC'], ['#003366', 'fau']]) {
+    for (const [foreground, background] of [['white', '#fff'], ['#abc', '#AABBCC'], ['#04316a', 'fau']]) {
         assert.throws(() => resolveColors(foreground, background), { code: 'contrast' });
     }
 });

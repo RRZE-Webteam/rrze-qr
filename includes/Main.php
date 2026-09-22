@@ -138,7 +138,7 @@ class Main
         if ($allow_transparent && $value === 'transparent') {
             return $value;
         }
-        $legacy = ['white' => '#ffffff', 'black' => '#000000', 'fau' => '#003366'];
+        $legacy = ['white' => '#ffffff', 'black' => '#000000', 'fau' => '#04316a'];
         if (isset($legacy[$value])) {
             return $legacy[$value];
         }

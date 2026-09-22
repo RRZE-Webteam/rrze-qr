@@ -174,5 +174,5 @@ unset($GLOBALS['options']['rrze_qr_defaults']);
 $GLOBALS['options']['rrze_qr_foreground'] = 'fau';
 $GLOBALS['options']['rrze_qr_background'] = 'white';
 $main->rrze_qr_enqueue_scripts('toplevel_page_rrze-qr');
-check($GLOBALS['localized']['rrzeQrAdmin']['defaults'] === ['foreground' => '#003366', 'background' => '#ffffff', 'size' => 300], 'Existing site color defaults must survive the upgrade');
+check($GLOBALS['localized']['rrzeQrAdmin']['defaults'] === ['foreground' => '#04316a', 'background' => '#ffffff', 'size' => 300], 'Existing site color defaults must survive the upgrade');
 echo "PHP asset and migration checks passed.\n";

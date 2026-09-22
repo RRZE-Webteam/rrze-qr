@@ -100,7 +100,7 @@ function Workspace({ config }) {
     const palette = [
         { name: __('Black', 'rrze-qr'), color: '#000000' },
         { name: __('White', 'rrze-qr'), color: '#ffffff' },
-        { name: __('FAU Blue', 'rrze-qr'), color: '#003366' }
+        { name: __('FAU Blue', 'rrze-qr'), color: '#04316a' }
     ];
 
     return (

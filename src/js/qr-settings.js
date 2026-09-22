@@ -1,4 +1,4 @@
-const legacyColors = { white: '#ffffff', black: '#000000', fau: '#003366' };
+const legacyColors = { white: '#ffffff', black: '#000000', fau: '#04316a' };
 
 function normalizeColor(value) {
     if (typeof value !== 'string') { return null; }
