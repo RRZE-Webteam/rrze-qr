@@ -1,32 +1,40 @@
 {
   "name": "rrze-qr",
-  "version": "1.1.0",
+  "version": "2.0.0",
   "description": "Plugin to generate QR codes",
   "author": "RRZE Webteam",
-  "license": "GPL-2.0-or-later",
-  "main": "assets/js/rrze-qr.min.js",
+  "license": "GPL-3.0-or-later",
+  "main": "assets/js/admin.min.js",
   "textdomain": "rrze-qr",
   "browserslist": [
     "extends @wordpress/browserslist-config"
   ],
   "scripts": {
     "start": "npm run start:js & npm run start:css",
-    "start:js": "cp src/js/qrious.min.js assets/js/qrious.min.js && wp-scripts start src/js/rrze-qr.js --output-path=assets/js --output-filename=rrze-qr.min.js",
+    "start:js": "cp node_modules/qrious/dist/qrious.min.js assets/js/qrious.min.js && wp-scripts start",
     "start:css": "sass src/css/rrze-qr.css:assets/css/rrze-qr.min.css --watch",
-    "build": "npm run build:js && npm run build:css && npm run increment-version",
-    "build:js": "wp-scripts build src/js/rrze-qr.js --output-path=assets/js --output-filename=rrze-qr.min.js && cp src/js/qrious.min.js assets/js/qrious.min.js",
+    "build": "npm run build:js && npm run build:css",
+    "build:js": "wp-scripts build && cp node_modules/qrious/dist/qrious.min.js assets/js/qrious.min.js",
     "build:css": "sass src/css/rrze-qr.css:assets/css/rrze-qr.min.css --style=compressed --no-source-map",
     "increment-version": "node increment-version.js patch",
     "format": "wp-scripts format",
     "lint:js": "wp-scripts lint-js",
-    "lint:js:fix": "wp-scripts lint-js --fix"
+    "lint:js:fix": "wp-scripts lint-js --fix",
+    "test": "node --test tests/*.test.js && php tests/php.php",
+    "lint:php": "php tests/lint.php",
+    "release:patch": "node increment-version.js patch",
+    "release:minor": "node increment-version.js minor",
+    "release:major": "node increment-version.js major"
   },
   "devDependencies": {
-    "@wordpress/scripts": "^30.7.0",
-    "sass": "^1.87.0"
+    "@wordpress/components": "^25.8.14",
+    "@wordpress/element": "^5.19.13",
+    "@wordpress/i18n": "^4.42.13",
+    "@wordpress/scripts": "^35.0.0",
+    "jsqr": "^1.4.0",
+    "sass": "^1.104.1"
   },
   "dependencies": {
-    "jquery": "^3.7.1",
     "qrious": "^4.0.2"
   }
 }

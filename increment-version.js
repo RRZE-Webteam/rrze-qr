@@ -1,87 +1,49 @@
-const fs = require( 'fs' );
-const path = require( 'path' );
+const fs = require('node:fs');
+const path = require('node:path');
 
-// Define paths
-const baseDir = __dirname;
-const packageJsonPath = path.join( baseDir, 'package.json' );
-const readmePath = path.join( baseDir, 'readme.txt' );
-
-// Automatically find the first .php file in the current directory
-const pluginFilePath = fs
-	.readdirSync( baseDir )
-	.find( ( file ) => file.endsWith( '.php' ) );
-const pluginFullPath = pluginFilePath
-	? path.join( baseDir, pluginFilePath )
-	: null;
-
-// Increment the version based on the specified type
-function incrementVersion( version, type ) {
-	const [ major, minor, patch ] = version.split( '.' ).map( Number );
-	if ( type === 'minor' ) return `${ major }.${ minor + 1 }.0`;
-	if ( type === 'patch' ) return `${ major }.${ minor }.${ patch + 1 }`;
-	console.error( `Unknown version increment type: ${ type }` );
-	process.exit( 1 );
+const incrementType = process.argv[2];
+if (!['major', 'minor', 'patch'].includes(incrementType)) {
+    console.error('Usage: node increment-version.js [major|minor|patch]');
+    process.exit(1);
 }
 
-// Update version based on tag label (e.g., "Stable tag" or "Version") regardless of spacing
-function updateVersionByTag( filePath, tagLabel, newVersion ) {
-	try {
-		const content = fs.readFileSync( filePath, 'utf8' );
-		const regex = new RegExp( `(${ tagLabel }\\s*:\\s*)([\\d.]+)` );
-		const updated = content.replace( regex, `$1${ newVersion }` );
-
-		if ( updated === content ) {
-			console.error(
-				`No matching "${ tagLabel }" tag found in ${ filePath }.`
-			);
-			process.exit( 1 );
-		}
-
-		fs.writeFileSync( filePath, updated, 'utf8' );
-		console.log( `Updated ${ tagLabel } in ${ filePath }` );
-	} catch ( err ) {
-		console.error(
-			`Failed to update ${ tagLabel } in ${ filePath }: ${ err.message }`
-		);
-		process.exit( 1 );
-	}
-}
-
-// Get the version increment type from command-line arguments
-const incrementType = process.argv[ 2 ];
-if ( ! [ 'minor', 'patch' ].includes( incrementType ) ) {
-	console.error( 'Usage: node increment-version.js [minor|patch]' );
-	process.exit( 1 );
-}
-
-// Read, increment, and update package.json
-let newVersion;
+// Prepare and validate every change before writing any release metadata.
 try {
-	const pkg = JSON.parse( fs.readFileSync( packageJsonPath, 'utf8' ) );
-	const oldVersion = pkg.version;
-	newVersion = incrementVersion( oldVersion, incrementType );
-	pkg.version = newVersion;
-	fs.writeFileSync( packageJsonPath, JSON.stringify( pkg, null, 2 ), 'utf8' );
-	console.log(
-		`Version updated from ${ oldVersion } to ${ newVersion } in package.json`
-	);
-} catch ( err ) {
-	console.error( `Error processing package.json: ${ err.message }` );
-	process.exit( 1 );
+    const packagePath = path.join(__dirname, 'package.json');
+    const lockPath = path.join(__dirname, 'package-lock.json');
+    const pluginPath = path.join(__dirname, 'rrze-qr.php');
+    const readmePath = path.join(__dirname, 'readme.txt');
+    const pkg = JSON.parse(fs.readFileSync(packagePath, 'utf8'));
+    const lock = JSON.parse(fs.readFileSync(lockPath, 'utf8'));
+    const oldVersion = pkg.version;
+    if (!/^\d+\.\d+\.\d+$/.test(oldVersion)) {
+        throw new Error('Expected a numeric major.minor.patch version in package.json.');
+    }
+    if (lock.version !== oldVersion || lock.packages?.['']?.version !== oldVersion) {
+        throw new Error('package.json and package-lock.json versions must match before releasing.');
+    }
+    const [major, minor, patch] = oldVersion.split('.').map(Number);
+    const newVersion = incrementType === 'major' ? `${major + 1}.0.0`
+        : incrementType === 'minor' ? `${major}.${minor + 1}.0` : `${major}.${minor}.${patch + 1}`;
+    function updateTag(file, label) {
+        const content = fs.readFileSync(file, 'utf8');
+        const expression = new RegExp(`(^[\\t ]*${label}[\\t ]*:[\\t ]*)([\\d.]+)`, 'm');
+        const match = content.match(expression);
+        if (!match || match[2] !== oldVersion) {
+            throw new Error(`${label} in ${path.basename(file)} must match ${oldVersion}.`);
+        }
+        return content.replace(expression, (_, prefix) => prefix + newVersion);
+    }
+    const changes = [[pluginPath, updateTag(pluginPath, 'Version')]];
+    if (fs.existsSync(readmePath)) { changes.push([readmePath, updateTag(readmePath, 'Stable tag')]); }
+    pkg.version = newVersion;
+    lock.version = newVersion;
+    lock.packages[''].version = newVersion;
+    changes.push([packagePath, JSON.stringify(pkg, null, 2) + '\n']);
+    changes.push([lockPath, JSON.stringify(lock, null, 2) + '\n']);
+    for (const [file, content] of changes) { fs.writeFileSync(file, content); }
+    console.log(`Release version updated from ${oldVersion} to ${newVersion}.`);
+} catch (error) {
+    console.error(error.message);
+    process.exit(1);
 }
-
-// Update Stable tag in readme.txt
-if ( fs.existsSync( readmePath ) ) {
-	updateVersionByTag( readmePath, 'Stable tag', newVersion );
-} else {
-	console.warn( `File ${ readmePath } not found.` );
-}
-
-// Update Version in plugin file
-if ( pluginFullPath && fs.existsSync( pluginFullPath ) ) {
-	updateVersionByTag( pluginFullPath, 'Version', newVersion );
-} else {
-	console.warn( `No .php plugin file found in the current directory.` );
-}
-
-console.log( `✔ Version successfully updated to ${ newVersion }` );

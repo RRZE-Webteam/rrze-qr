@@ -1,0 +1,52 @@
+const { normalizeSize } = require('./qr-settings');
+
+// Byte capacities for QR versions 1–40 at error correction level L.
+const capacities = [17, 32, 53, 78, 106, 134, 154, 192, 230, 271, 321, 367, 425, 458,
+    520, 586, 644, 718, 792, 858, 929, 1003, 1091, 1171, 1273, 1367, 1465, 1528,
+    1628, 1732, 1840, 1952, 2068, 2188, 2303, 2431, 2563, 2699, 2809, 2953];
+
+function inputError(code, message) {
+    const error = new Error(message);
+    error.code = code;
+    return error;
+}
+
+// QRious encodes single-byte values at level L (maximum 2,953 bytes).
+function normalizeUrl(value) {
+    let url;
+    try {
+        url = new URL(value);
+    } catch (error) {
+        throw inputError('invalidUrl', 'Enter a valid HTTP or HTTPS URL.');
+    }
+    if (!['http:', 'https:'].includes(url.protocol)) {
+        throw inputError('invalidUrl', 'Enter a valid HTTP or HTTPS URL.');
+    }
+    const normalized = url.href;
+    if (normalized.length > 2953) {
+        throw inputError('tooLong', 'This URL is too long for a QR code. Use a shorter URL (maximum 2,953 encoded characters).');
+    }
+    return normalized;
+}
+
+function createQr(QRious, options) {
+    const value = normalizeUrl(options.value);
+    const requestedSize = normalizeSize(options.size === undefined ? 300 : options.size);
+    if (requestedSize === null) {
+        throw inputError('invalidSize', 'Enter a whole number between 128 and 4096 pixels.');
+    }
+    const version = capacities.findIndex(capacity => value.length <= capacity) + 1;
+    const modules = 17 + 4 * version;
+    // Include four blank modules on each edge; keep modules at least two pixels wide.
+    const size = Math.max(requestedSize, (modules + 8) * 2);
+    const moduleSize = Math.floor(size / (modules + 8));
+    return new QRious(Object.assign({}, options, {
+        value,
+        level: 'L',
+        size,
+        // Put unused pixels in the margin, preserving exact square dimensions.
+        padding: Math.floor((size - modules * moduleSize) / 2)
+    }));
+}
+
+module.exports = { normalizeUrl, createQr };
