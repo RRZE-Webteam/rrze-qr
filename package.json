@@ -21,7 +21,7 @@
     "lint:js": "wp-scripts lint-js",
     "lint:js:fix": "wp-scripts lint-js --fix",
     "test": "node --test tests/*.test.js && php tests/php.php",
-    "lint:php": "php -l rrze-qr.php && php -l includes/Main.php && php -l tests/php.php",
+    "lint:php": "php tests/lint.php",
     "release:patch": "node increment-version.js patch",
     "release:minor": "node increment-version.js minor"
   },

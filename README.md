@@ -83,6 +83,12 @@ The lockfile pins dependencies. Builds regenerate the committed files in `assets
 and do not change the plugin version. Use `npm run release:patch` or
 `npm run release:minor` explicitly when preparing a release.
 
+`Main` constructs `Settings` and `QRCode` and registers their WordPress hooks.
+`Settings` owns site defaults, validation on save, and migration; `QRCode` owns the
+admin workspace, permissions, contextual links, and assets. `Utilities` provides
+pure static color and size validation. The PHP lint command checks every PHP file
+under `includes/` and `tests/`, plus the plugin entry point.
+
 The React workspace has its own entry point in `src/js/admin.js`. WordPress supplies
 `wp-components`, `wp-element`, `wp-i18n`, and the components stylesheet. JSX uses
 the classic transform to support WordPress 6.4. QRious is copied from the locked

@@ -2,6 +2,8 @@
 
 namespace RRZE\QR;
 defined('ABSPATH') || exit;
+
+/** Pure color and size validation shared by the settings handlers. */
 class Utilities
 {
     /**
@@ -10,9 +12,9 @@ class Utilities
      *
      * @return string
      */
-    public function sanitizeForegroundHexColor($value)
+    public static function sanitizeForegroundHexColor($value): string
     {
-        return $this->normalizeColor($value) ?? '#000000';
+        return self::normalizeColor($value) ?? '#000000';
     }
 
     /**
@@ -21,9 +23,9 @@ class Utilities
      *
      * @return string
      */
-    public function sanitizeBackgroundHexColor($value)
+    public static function sanitizeBackgroundHexColor($value): string
     {
-        return $this->normalizeColor($value, true) ?? '#ffffff';
+        return self::normalizeColor($value, true) ?? '#ffffff';
     }
 
     /**
@@ -32,9 +34,9 @@ class Utilities
      * @param $value             hex
      * @param $allow_transparent boolean
      *
-     * @return string|null
+     * @return ?string
      */
-    public function normalizeColor($value, $allow_transparent = false): string|null
+    public static function normalizeColor($value, $allow_transparent = false): ?string
     {
         if (!is_string($value)) {
             return null;
@@ -57,23 +59,23 @@ class Utilities
     }
 
     /**
-     * Evaluates it the Foreground Background combination is not identical.
+     * Checks that normalized foreground and background colors differ.
      * @param array $tokens
      *
      * @return bool
      */
-    public function isValidColorPair(array $tokens): bool
+    public static function isValidColorPair(array $tokens): bool
     {
         return $tokens['foreground'] !== $tokens['background'];
     }
 
     /**
-     * Normalizes the Size value. Has to be greater than 128px and smaller than 4096px.
+     * Normalizes the Size value. Accepts 128 through 4096 pixels, inclusive.
      * @param $value    int
      *
-     * @return int|null
+     * @return ?int
      */
-    public function normalizeSize($value): int|null
+    public static function normalizeSize($value): ?int
     {
         if (!is_int($value) && (!is_string($value) || !preg_match('/\A[0-9]+\z/', $value))) {
             return null;

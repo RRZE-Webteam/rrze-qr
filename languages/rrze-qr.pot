@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-09-22T05:44:43+00:00\n"
+"POT-Creation-Date: 2026-09-22T06:58:41+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: rrze-qr\n"
@@ -39,77 +39,77 @@ msgstr ""
 msgid "https://blogs.fau.de/webworking/"
 msgstr ""
 
-#: includes/Main.php:78
+#: includes/QRCode.php:71
 msgid "Untitled"
 msgstr ""
 
-#: includes/Main.php:89
+#: includes/QRCode.php:82
 msgid "Invalid post ID."
 msgstr ""
 
-#: includes/Main.php:93
+#: includes/QRCode.php:86
 msgid "You cannot generate a QR code for this post."
 msgstr ""
 
-#: includes/Main.php:97
+#: includes/QRCode.php:90
 msgid "Could not retrieve permalink."
 msgstr ""
 
-#: includes/Main.php:104
+#: includes/QRCode.php:97
 msgid "Back to pages"
 msgstr ""
 
-#: includes/Main.php:104
+#: includes/QRCode.php:97
 msgid "Back to posts"
 msgstr ""
 
 #. translators: %s: post or page title.
-#: includes/Main.php:114
+#: includes/QRCode.php:107
 #, php-format
 msgid "Create QR code for %s"
 msgstr ""
 
-#: includes/Main.php:115
+#: includes/QRCode.php:108
 msgid "Create QR code"
 msgstr ""
 
-#: includes/Main.php:130
-#: includes/Main.php:131
-#: includes/Main.php:159
+#: includes/QRCode.php:123
+#: includes/QRCode.php:124
+#: includes/QRCode.php:152
 msgid "QR-Codes"
 msgstr ""
 
-#: includes/Main.php:154
+#: includes/QRCode.php:147
 msgid "You do not have permission to generate QR codes."
 msgstr ""
 
-#: includes/Main.php:160
+#: includes/QRCode.php:153
 msgid "Create a QR code, adjust its appearance, and download it as a PNG."
 msgstr ""
 
-#: includes/Main.php:162
+#: includes/QRCode.php:155
 msgid "Enable JavaScript to use the QR code generator."
 msgstr ""
 
-#: includes/Main.php:277
+#: includes/Settings.php:43
 msgid "Only administrators can save site defaults."
 msgstr ""
 
-#: includes/Main.php:283
+#: includes/Settings.php:49
 #: src/js/admin.js:12
 msgid "Enter a whole number between 128 and 4096 pixels."
 msgstr ""
 
-#: includes/Main.php:286
+#: includes/Settings.php:52
 msgid "Choose valid colors and an export size."
 msgstr ""
 
-#: includes/Main.php:290
+#: includes/Settings.php:56
 #: src/js/admin.js:15
 msgid "Foreground and background must be different colors."
 msgstr ""
 
-#: includes/Main.php:294
+#: includes/Settings.php:60
 msgid "The defaults could not be saved. Please try again."
 msgstr ""
 
